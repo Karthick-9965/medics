@@ -28,7 +28,7 @@ export default function GetStarted({ onLogin, onSignUp }: GetStartedProps) {
         {/* Buttons Section */}
         <View style={styles.buttonSection}>
           <TouchableOpacity style={styles.loginButton} onPress={onLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
+            <Text style={styles.loginButtonText}>Login.</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.signUpButton} onPress={onSignUp}>
