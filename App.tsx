@@ -9,17 +9,33 @@ import Login from './src/screens/Login';
 import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
 import Home from './src/screens/Home';
+import { Colors } from './src/constants/Colors';
+import { getLoginSession, clearLoginSession } from './src/utils/storage';
+import { useAppNotification } from './src/hooks/useAppNotification';
 
 type Screen = 'splash' | 'onboarding' | 'getstarted' | 'login' | 'signup' | 'forgotpassword' | 'home';
 
 export default function App() {
+  useAppNotification();
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userName, setUserName] = useState('');
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash':
-        return <Splash onFinish={() => setCurrentScreen('onboarding')} />;
+        return (
+          <Splash
+            onFinish={async () => {
+              const session = await getLoginSession();
+              if (session) {
+                setUserName(session.name);
+                setCurrentScreen('home');
+              } else {
+                setCurrentScreen('onboarding');
+              }
+            }}
+          />
+        );
       case 'onboarding':
         return <Onboarding onFinish={() => setCurrentScreen('getstarted')} />;
       case 'getstarted':
@@ -62,14 +78,27 @@ export default function App() {
         return (
           <Home
             userName={userName}
-            onLogout={() => {
+            onLogout={async () => {
+              await clearLoginSession();
               setUserName('');
               setCurrentScreen('getstarted');
             }}
           />
         );
       default:
-        return <Splash onFinish={() => setCurrentScreen('onboarding')} />;
+        return (
+          <Splash
+            onFinish={async () => {
+              const session = await getLoginSession();
+              if (session) {
+                setUserName(session.name);
+                setCurrentScreen('home');
+              } else {
+                setCurrentScreen('onboarding');
+              }
+            }}
+          />
+        );
     }
   };
 
@@ -86,6 +115,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
   },
 });

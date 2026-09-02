@@ -1,7 +1,9 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, View, Text, TouchableOpacity, } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import Logo from '../components/Logo';
+import Button from '../components/Button';
+import { Colors } from '../constants/Colors';
 
 interface GetStartedProps {
   onLogin: () => void;
@@ -14,7 +16,7 @@ export default function GetStarted({ onLogin, onSignUp }: GetStartedProps) {
       <View style={styles.contentContainer}>
         {/* Logo and Brand Name */}
         <View style={styles.logoSection}>
-          <Logo size={100} color="#138A72" textColor="#138A72" />
+          <Logo size={100} color={Colors.primary} textColor={Colors.primary} />
         </View>
 
         {/* Text Section */}
@@ -27,13 +29,8 @@ export default function GetStarted({ onLogin, onSignUp }: GetStartedProps) {
 
         {/* Buttons Section */}
         <View style={styles.buttonSection}>
-          <TouchableOpacity style={styles.loginButton} onPress={onLogin}>
-            <Text style={styles.loginButtonText}>Login.</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.signUpButton} onPress={onSignUp}>
-            <Text style={styles.signUpButtonText}>Sign Up</Text>
-          </TouchableOpacity>
+          <Button title="Login" variant="primary" onPress={onLogin} />
+          <Button title="Sign Up" variant="outline" onPress={onSignUp} />
         </View>
       </View>
     </SafeAreaView>
@@ -43,7 +40,7 @@ export default function GetStarted({ onLogin, onSignUp }: GetStartedProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
   },
   contentContainer: {
     flex: 1,
@@ -63,13 +60,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1A3B32',
+    color: Colors.textDark,
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#7E918C',
+    color: Colors.secondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -77,38 +74,5 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 16,
     paddingBottom: 20,
-  },
-  loginButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#138A72',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#138A72',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  loginButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signUpButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#138A72',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  signUpButtonText: {
-    color: '#138A72',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

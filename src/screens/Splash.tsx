@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import Logo from '../components/Logo';
+import { Colors } from '../constants/Colors';
 
 interface SplashProps {
   onFinish: () => void;
@@ -16,7 +17,7 @@ export default function Splash({ onFinish }: SplashProps) {
 
   return (
     <TouchableOpacity style={styles.container} activeOpacity={1} onPress={onFinish}>
-      <Logo size={100} color="#ffffff" textColor="#ffffff" />
+      <Logo size={100} color={Colors.white} textColor={Colors.white} />
     </TouchableOpacity>
   );
 }
@@ -24,7 +25,7 @@ export default function Splash({ onFinish }: SplashProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#138A72',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },

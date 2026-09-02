@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../constants/Colors';
  
 const { width, height } = Dimensions.get('window');
  
@@ -99,17 +100,20 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    height: 50,
+  },
+  skipButton: {
+    padding: 8,
   },
   skipText: {
-    color: '#8e8e93',
+    color: Colors.inputIcon,
     fontSize: 16,
     fontWeight: '500',
   },
@@ -125,13 +129,13 @@ const styles = StyleSheet.create({
     height: height * 0.45,
   },
   card: {
-    backgroundColor: '#F5F8F7',
+    backgroundColor: Colors.bgLight,
     marginHorizontal: 20,
     marginBottom: 30,
     padding: 24,
     borderRadius: 24,
     // iOS shadow
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -141,7 +145,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#1A3B32',
+    color: Colors.textDark,
     lineHeight: 30,
     marginBottom: 28,
   },
@@ -161,20 +165,20 @@ const styles = StyleSheet.create({
   },
   indicatorActive: {
     width: 20,
-    backgroundColor: '#138A72',
+    backgroundColor: Colors.primary,
   },
   indicatorInactive: {
     width: 6,
-    backgroundColor: '#D1E6E2',
+    backgroundColor: Colors.indicatorInactive,
   },
   nextButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#138A72',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#138A72',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,

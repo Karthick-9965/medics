@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text, Image } from 'react-native';
+import { Colors } from '../constants/Colors';
 
 interface LogoProps {
   size?: number;
@@ -8,7 +9,7 @@ interface LogoProps {
   hideText?: boolean;
 }
 
-export default function Logo({ size = 80, color = '#138A72', textColor = '#138A72', hideText = false }: LogoProps) {
+export default function Logo({ size = 80, color = Colors.primary, textColor = Colors.primary, hideText = false }: LogoProps) {
   return (
     <View style={styles.container}>
       <Image

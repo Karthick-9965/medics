@@ -1,39 +1,58 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../constants/Colors';
+import Button from '../components/Button';
+import Logo from '../components/Logo';
 
 interface HomeProps {
   userName: string;
   onLogout: () => void;
+  onSeeAllDoctors?: () => void;
 }
 
-export default function Home({ userName, onLogout }: HomeProps) {
+export default function Home({
+  userName,
+  onLogout,
+}: HomeProps) {
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View />
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Feather name="log-out" size={20} color="#D93838" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
       <View style={styles.content}>
-        <View style={styles.successIconCircle}>
-          <Ionicons name="home-outline" size={48} color="#138A72" />
+        {/* Top Branding (Single Logo & Name) */}
+        <View style={styles.logoSection}>
+          <Logo size={72} />
         </View>
 
-        <Text style={styles.title}>Welcome to Home Page</Text>
-        <Text style={styles.userName}>{userName || 'User'}</Text>
-        <Text style={styles.subtitle}>
-          Once again, you login successfully into medidoc app.
-        </Text>
+        {/* Welcome Card */}
+        <View style={styles.card}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="checkmark-circle" size={54} color={Colors.primary} />
+          </View>
 
-        <TouchableOpacity style={styles.logoutTextButton} onPress={onLogout}>
-          <Text style={styles.logoutTextButtonText}>Log Out</Text>
-        </TouchableOpacity>
+          <Text style={styles.welcomeHeading}>Welcome to Home Page</Text>
+
+          <Text style={styles.greetingText}>
+            Hello, <Text style={styles.userNameHighlight}>{userName || 'User'}</Text>! 👋
+          </Text>
+
+          <Text style={styles.infoText}>
+            You have successfully logged in to your account.
+          </Text>
+        </View>
+
+        {/* Bottom Action */}
+        <View style={styles.footerSection}>
+          <Button
+            title="Log Out"
+            variant="outline"
+            onPress={onLogout}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -42,71 +61,65 @@ export default function Home({ userName, onLogout }: HomeProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    height: 56,
-  },
-  logoutButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF2F2',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: Colors.white,
   },
   content: {
     flex: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoSection: {
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: Colors.bgLight,
+    borderRadius: 24,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderColor: Colors.border,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.accentLight,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
-    marginTop: -40,
+    marginBottom: 18,
   },
-  successIconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E7F5F2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  title: {
+  welcomeHeading: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1A3B32',
+    color: Colors.textDark,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  greetingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.textDark,
     textAlign: 'center',
     marginBottom: 6,
   },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#138A72',
-    textAlign: 'center',
-    marginBottom: 16,
+  userNameHighlight: {
+    color: Colors.primary,
+    fontWeight: '800',
   },
-  subtitle: {
-    fontSize: 15,
-    color: '#7E918C',
+  infoText: {
+    fontSize: 14,
+    color: Colors.secondary,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 36,
+    lineHeight: 20,
+    marginTop: 4,
+    paddingHorizontal: 10,
   },
-  logoutTextButton: {
-    height: 50,
+  footerSection: {
     width: '100%',
-    borderRadius: 25,
-    backgroundColor: '#D93838',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutTextButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '600',
+    marginBottom: 16,
   },
 });

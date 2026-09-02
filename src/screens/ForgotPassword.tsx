@@ -11,25 +11,36 @@ import {
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../constants/Colors';
+import { ErrorMessages } from '../constants/ErrorMessages';
+import InputField from '../components/InputField';
+import Button from '../components/Button';
+import SuccessModal from '../components/SuccessModal';
+import {
+  validateEmail,
+  validatePassword,
+  isEmailValidFormat,
+} from '../utils/validation';
+import { getUserByEmail, updateUserPassword } from '../utils/storage';
 
 interface ForgotPasswordProps {
   onBackToLogin: () => void;
   onResetSuccess: () => void;
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[0-9]{10}$/;
-
 export default function ForgotPassword({ onBackToLogin, onResetSuccess }: ForgotPasswordProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
   
   // Step 1 states
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [phoneError, setPhoneError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // OTP mock states
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [codeError, setCodeError] = useState('');
 
   // Step 2 states
   const [code, setCode] = useState<string[]>(['', '', '', '']);
@@ -38,15 +49,12 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
   // Step 3 states
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Email format check for the checkmark
-  const isValidEmail = EMAIL_REGEX.test(email);
-  const isValidPhone = PHONE_REGEX.test(phone);
+  const isValidEmail = isEmailValidFormat(email);
 
   // Handle Code Input Focus shifting
   const handleCodeChange = (text: string, index: number) => {
@@ -54,6 +62,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
     const newCode = [...code];
     newCode[index] = cleanText;
     setCode(newCode);
+    setCodeError(''); // Clear error on change
 
     if (cleanText.length > 0 && index < 3) {
       codeRefs.current[index + 1]?.focus();
@@ -71,49 +80,69 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
       onBackToLogin();
     } else if (currentStep === 2) {
       setCurrentStep(1);
+      setCode(['', '', '', '']);
+      setCodeError('');
     } else if (currentStep === 3) {
       setCurrentStep(2);
     }
   };
 
-  const handleNextStep1 = () => {
-    if (activeTab === 'email') {
-      if (!email) {
-        setEmailError('*Email is required');
-        return;
-      } else if (!isValidEmail) {
-        setEmailError('*Please enter a valid email address');
-        return;
-      }
-      setEmailError('');
-    } else {
-      if (!phone) {
-        setPhoneError('*Phone number is required');
-        return;
-      } else if (!isValidPhone) {
-        setPhoneError('*Please enter a valid 10-digit phone number');
-        return;
-      }
-      setPhoneError('');
+  const generateOtpCode = () => {
+    // Generate a random 4-digit code (e.g. "5642")
+    const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(newOtp);
+    setShowOtpModal(true);
+  };
+
+  const handleNextStep1 = async () => {
+    const errEmail = validateEmail(email);
+    if (errEmail) {
+      setEmailError(errEmail);
+      return;
     }
+    
+    setLoading(true);
+    const userExists = await getUserByEmail(email);
+    setLoading(false);
+
+    if (!userExists) {
+      setEmailError('*Email is not registered');
+      return;
+    }
+    setEmailError('');
+
+    // Generate and show mock OTP popup
+    generateOtpCode();
+  };
+
+  const handleOtpModalConfirm = () => {
+    setShowOtpModal(false);
     setCurrentStep(2);
   };
 
   const handleNextStep2 = () => {
-    const isCodeComplete = code.every(digit => digit !== '');
-    if (!isCodeComplete) return;
+    const enteredCode = code.join('');
+    if (enteredCode.length !== 4) return;
+
+    if (enteredCode !== generatedOtp) {
+      setCodeError('*Invalid verification code. Please try again.');
+      // Clear inputs for re-entry
+      setCode(['', '', '', '']);
+      codeRefs.current[0]?.focus();
+      return;
+    }
+
+    setCodeError('');
     setCurrentStep(3);
   };
 
-  const handleNextStep3 = () => {
+  const handleNextStep3 = async () => {
     let hasError = false;
 
     // Password check
-    if (!password) {
-      setPasswordError('*Password is required');
-      hasError = true;
-    } else if (password.length < 6) {
-      setPasswordError('*Password must be at least 6 characters');
+    const errPassword = validatePassword(password);
+    if (errPassword) {
+      setPasswordError(errPassword);
       hasError = true;
     } else {
       setPasswordError('');
@@ -121,16 +150,25 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
 
     // Confirm password check
     if (!confirmPassword) {
-      setConfirmPasswordError('*Confirm password is required');
+      setConfirmPasswordError(ErrorMessages.password.confirmRequired);
       hasError = true;
     } else if (password !== confirmPassword) {
-      setConfirmPasswordError('*Passwords do not match');
+      setConfirmPasswordError(ErrorMessages.password.mismatch);
       hasError = true;
     } else {
       setConfirmPasswordError('');
     }
 
     if (hasError) return;
+
+    setLoading(true);
+    const success = await updateUserPassword(email, password);
+    setLoading(false);
+
+    if (!success) {
+      setPasswordError('*Failed to update password. Try again.');
+      return;
+    }
 
     setShowSuccessModal(true);
   };
@@ -145,7 +183,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color="#1A3B32" />
+          <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <View style={styles.headerRightPlaceholder} />
       </View>
@@ -156,108 +194,35 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          {/* Step 1: Input Email / Phone */}
+          {/* Step 1: Input Email */}
           {currentStep === 1 && (
             <View style={styles.stepSection}>
               <Text style={styles.title}>Forgot Your Password?</Text>
               <Text style={styles.subtitle}>
-                Enter your email or your phone number, we will send you confirmation code
+                Enter your email address, we will send you confirmation code
               </Text>
 
-              {/* Tab Selector Capsule */}
-              <View style={styles.tabSelectorBg}>
-                <TouchableOpacity
-                  style={[styles.tabButton, activeTab === 'email' && styles.tabButtonActive]}
-                  onPress={() => {
-                    setActiveTab('email');
-                    setPhoneError('');
-                  }}
-                >
-                  <Text style={[styles.tabText, activeTab === 'email' && styles.tabTextActive]}>
-                    Email
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.tabButton, activeTab === 'phone' && styles.tabButtonActive]}
-                  onPress={() => {
-                    setActiveTab('phone');
-                    setEmailError('');
-                  }}
-                >
-                  <Text style={[styles.tabText, activeTab === 'phone' && styles.tabTextActive]}>
-                    Phone
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
               {/* Input Area */}
-              {activeTab === 'email' ? (
-                <View>
-                  <View style={[styles.inputContainer, emailError ? styles.inputContainerError : (isValidEmail && styles.inputContainerFilled)]}>
-                    <Feather
-                      name="mail"
-                      size={20}
-                      color={emailError ? '#FF5B5B' : (isValidEmail ? '#138A72' : '#8E9F9A')}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter your email"
-                      placeholderTextColor="#A8B6B2"
-                      value={email}
-                      onChangeText={(text) => {
-                        setEmail(text);
-                        setEmailError('');
-                      }}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    {isValidEmail && !emailError && (
-                      <Ionicons name="checkmark" size={18} color="#138A72" style={styles.checkmarkIcon} />
-                    )}
-                  </View>
-                  {emailError ? <Text style={styles.inlineErrorText}>{emailError}</Text> : null}
-                </View>
-              ) : (
-                <View>
-                  <View style={[styles.inputContainer, phoneError ? styles.inputContainerError : (isValidPhone && styles.inputContainerFilled)]}>
-                    <Feather
-                      name="phone"
-                      size={20}
-                      color={phoneError ? '#FF5B5B' : (isValidPhone ? '#138A72' : '#8E9F9A')}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Enter 10-digit phone number"
-                      placeholderTextColor="#A8B6B2"
-                      value={phone}
-                      onChangeText={(text) => {
-                        setPhone(text);
-                        setPhoneError('');
-                      }}
-                      keyboardType="numeric"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                  {phoneError ? <Text style={styles.inlineErrorText}>{phoneError}</Text> : null}
-                </View>
-              )}
+              <InputField
+                icon="mail"
+                placeholder="Enter your email"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setEmailError('');
+                }}
+                keyboardType="email-address"
+                isValid={isValidEmail}
+                error={emailError}
+                style={styles.emailInputMargin}
+              />
 
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  ((activeTab === 'email' && !isValidEmail) || (activeTab === 'phone' && !isValidPhone)) &&
-                    styles.primaryButtonDisabled,
-                ]}
+              <Button
+                title="Reset Password"
                 onPress={handleNextStep1}
-                disabled={activeTab === 'email' ? !isValidEmail : !isValidPhone}
-              >
-                <Text style={styles.primaryButtonText}>Reset Password</Text>
-              </TouchableOpacity>
+                loading={loading}
+                disabled={!isValidEmail}
+              />
             </View>
           )}
 
@@ -266,11 +231,9 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
             <View style={styles.stepSection}>
               <Text style={styles.title}>Enter Verification Code</Text>
               <Text style={styles.subtitle}>
-                Enter code that we have sent to your {activeTab === 'email' ? 'email' : 'number'}{' '}
+                Enter code that we have sent to your email{' '}
                 <Text style={styles.boldText}>
-                  {activeTab === 'email'
-                    ? email.length > 5 ? email.substring(0, 3) + '***' : email
-                    : phone.length > 5 ? phone.substring(0, 4) + '***' : phone}
+                  {email.length > 5 ? email.substring(0, 3) + '***' : email}
                 </Text>
               </Text>
 
@@ -283,6 +246,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
                     style={[
                       styles.codeInputBox,
                       digit !== '' && styles.codeInputBoxFilled,
+                      !!codeError && styles.codeInputBoxError,
                     ]}
                     maxLength={1}
                     keyboardType="number-pad"
@@ -293,19 +257,15 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
                   />
                 ))}
               </View>
+              {!!codeError && <Text style={styles.inlineErrorText}>{codeError}</Text>}
 
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  code.some(digit => digit === '') && styles.primaryButtonDisabled,
-                ]}
+              <Button
+                title="Verify"
                 onPress={handleNextStep2}
                 disabled={code.some(digit => digit === '')}
-              >
-                <Text style={styles.primaryButtonText}>Verify</Text>
-              </TouchableOpacity>
+              />
 
-              <TouchableOpacity style={styles.resendContainer}>
+              <TouchableOpacity style={styles.resendContainer} onPress={generateOtpCode}>
                 <Text style={styles.resendText}>
                   Didn't receive the code? <Text style={styles.resendLink}>Resend</Text>
                 </Text>
@@ -320,104 +280,72 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
               <Text style={styles.subtitle}>Create your new password to login</Text>
 
               {/* Password Input */}
-              <View style={[styles.inputContainer, passwordError ? styles.inputContainerError : (password.length > 0 && styles.inputContainerFilled)]}>
-                <Feather
-                  name="lock"
-                  size={20}
-                  color={passwordError ? '#FF5B5B' : (password.length > 0 ? '#138A72' : '#8E9F9A')}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter password (min 6 chars)"
-                  placeholderTextColor="#A8B6B2"
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setPasswordError('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Feather name={showPassword ? 'eye' : 'eye-off'} size={20} color={passwordError ? '#FF5B5B' : '#8E9F9A'} />
-                </TouchableOpacity>
-              </View>
-              {passwordError ? <Text style={styles.inlineErrorText}>{passwordError}</Text> : null}
+              <InputField
+                icon="lock"
+                placeholder="Enter password (min 6 chars)"
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setPasswordError('');
+                }}
+                isPassword
+                error={passwordError}
+              />
 
               {/* Confirm Password Input */}
-              <View
-                style={[
-                  styles.inputContainer,
-                  confirmPasswordError ? styles.inputContainerError : (confirmPassword.length > 0 && password === confirmPassword && styles.inputContainerFilled),
-                ]}
-              >
-                <Feather
-                  name="lock"
-                  size={20}
-                  color={
-                    confirmPasswordError
-                      ? '#FF5B5B'
-                      : confirmPassword.length > 0 && password === confirmPassword
-                      ? '#138A72'
-                      : '#8E9F9A'
-                  }
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm password"
-                  placeholderTextColor="#A8B6B2"
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    setConfirmPasswordError('');
-                  }}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={20} color={confirmPasswordError ? '#FF5B5B' : '#8E9F9A'} />
-                </TouchableOpacity>
-              </View>
-              {confirmPasswordError ? <Text style={styles.inlineErrorText}>{confirmPasswordError}</Text> : null}
+              <InputField
+                icon="lock"
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChangeText={(text) => {
+                  setConfirmPassword(text);
+                  setConfirmPasswordError('');
+                }}
+                isPassword
+                error={confirmPasswordError}
+              />
 
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  (!password || password.length < 6 || password !== confirmPassword) &&
-                    styles.primaryButtonDisabled,
-                ]}
+              <Button
+                title="Create Password"
                 onPress={handleNextStep3}
+                loading={loading}
                 disabled={!password || password.length < 6 || password !== confirmPassword}
-              >
-                <Text style={styles.primaryButtonText}>Create Password</Text>
-              </TouchableOpacity>
+              />
             </View>
           )}
 
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Success Modal */}
-      <Modal visible={showSuccessModal} transparent animationType="fade">
+      {/* Mock OTP Sent Modal Popup */}
+      <Modal visible={showOtpModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.successIconCircle}>
-              <Ionicons name="checkmark" size={40} color="#138A72" />
+          <View style={styles.otpCard}>
+            <View style={styles.otpIconCircle}>
+              <Ionicons name="mail-open-outline" size={40} color={Colors.primary} />
             </View>
-            <Text style={styles.modalTitle}>Success</Text>
-            <Text style={styles.modalSubtitle}>
-              You have successfully reset your password.
+            <Text style={styles.otpModalTitle}>OTP Sent Successfully</Text>
+            <Text style={styles.otpModalSubtitle}>
+              For testing purposes, we have generated a simulated 4-digit verification code for your email:
             </Text>
-            <TouchableOpacity style={styles.modalButton} onPress={handleSuccessModalClose}>
-              <Text style={styles.modalButtonText}>Login</Text>
+            <View style={styles.otpCodeContainer}>
+              <Text style={styles.otpCodeText}>{generatedOtp}</Text>
+            </View>
+            <TouchableOpacity style={styles.otpModalButton} onPress={handleOtpModalConfirm}>
+              <Text style={styles.otpModalButtonText}>Enter Code</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Success"
+        subtitle="You have successfully reset your password."
+        buttonTitle="Login"
+        onPressButton={handleSuccessModalClose}
+      />
     </SafeAreaView>
   );
 }
@@ -425,7 +353,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
   },
   header: {
     flexDirection: 'row',
@@ -433,7 +361,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     height: 56,
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
   },
   backButton: {
     padding: 8,
@@ -455,115 +383,28 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1A3B32',
+    color: Colors.textDark,
     marginBottom: 10,
     textAlign: 'left',
   },
   subtitle: {
     fontSize: 15,
-    color: '#7E918C',
+    color: Colors.secondary,
     textAlign: 'left',
     lineHeight: 22,
     marginBottom: 30,
   },
   boldText: {
     fontWeight: '700',
-    color: '#1A3B32',
+    color: Colors.textDark,
   },
-  tabSelectorBg: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F8F7',
-    borderRadius: 24,
-    padding: 4,
-    height: 48,
-    marginBottom: 32,
-  },
-  tabButton: {
-    flex: 1,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabButtonActive: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#8E9F9A',
-  },
-  tabTextActive: {
-    color: '#138A72',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    height: 56,
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: '#E8EFEF',
-  },
-  inputContainerFilled: {
-    borderColor: '#138A72',
-  },
-  inputContainerError: {
-    borderColor: '#FF5B5B',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    color: '#1A3B32',
-    fontSize: 16,
-    height: '100%',
-  },
-  checkmarkIcon: {
-    marginLeft: 8,
-  },
-  inlineErrorText: {
-    color: '#FF5B5B',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
-    marginLeft: 20,
-    marginBottom: 16,
-  },
-  primaryButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#138A72',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#138A72',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-    marginTop: 8,
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#A3D9D0',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  emailInputMargin: {
+    marginBottom: 28,
   },
   codeInputsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 20,
     gap: 12,
   },
   codeInputBox: {
@@ -571,15 +412,25 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E8EFEF',
-    backgroundColor: '#ffffff',
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
     textAlign: 'center',
     fontSize: 22,
     fontWeight: '700',
-    color: '#1A3B32',
+    color: Colors.textDark,
   },
   codeInputBoxFilled: {
-    borderColor: '#138A72',
+    borderColor: Colors.primary,
+  },
+  codeInputBoxError: {
+    borderColor: Colors.error,
+  },
+  inlineErrorText: {
+    color: Colors.error,
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   resendContainer: {
     alignItems: 'center',
@@ -587,10 +438,10 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 14,
-    color: '#7E918C',
+    color: Colors.secondary,
   },
   resendLink: {
-    color: '#138A72',
+    color: Colors.primary,
     fontWeight: '700',
   },
   modalOverlay: {
@@ -600,52 +451,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  modalCard: {
+  otpCard: {
     width: '100%',
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.white,
     borderRadius: 24,
     padding: 30,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 8,
   },
-  successIconCircle: {
+  otpIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#E7F5F2',
+    backgroundColor: Colors.accentLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  modalTitle: {
+  otpModalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A3B32',
+    color: Colors.textDark,
     marginBottom: 10,
     textAlign: 'center',
   },
-  modalSubtitle: {
+  otpModalSubtitle: {
     fontSize: 14,
-    color: '#7E918C',
+    color: Colors.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 24,
+    marginBottom: 20,
     paddingHorizontal: 10,
   },
-  modalButton: {
+  otpCodeContainer: {
+    backgroundColor: Colors.bgLight,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  otpCodeText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 6,
+  },
+  otpModalButton: {
     width: '100%',
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#138A72',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalButtonText: {
-    color: '#ffffff',
+  otpModalButtonText: {
+    color: Colors.white,
     fontSize: 15,
     fontWeight: '600',
   },
