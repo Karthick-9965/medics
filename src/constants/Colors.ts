@@ -1,7 +1,7 @@
 export const Colors = {
   primary: '#138A72',        // Brand primary teal
   primaryDisabled: '#A3D9D0', // Disabled buttons teal
-  textDark: '#1A3B32',       // Dark green/gray text for headings
+  textDark: '#000000',       // Heading text pure black
   secondary: '#7E918C',      // Subtitle / secondary text gray
   border: '#E8EFEF',         // Standard light input borders
   bgLight: '#F5F8F7',        // Light gray-green card/search background

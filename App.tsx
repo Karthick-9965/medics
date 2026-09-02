@@ -9,16 +9,18 @@ import Login from './src/screens/Login';
 import SignUp from './src/screens/SignUp';
 import ForgotPassword from './src/screens/ForgotPassword';
 import Home from './src/screens/Home';
+import SeeAllScreen, { SeeAllCategory } from './src/screens/SeeAllScreen';
 import { Colors } from './src/constants/Colors';
 import { getLoginSession, clearLoginSession } from './src/utils/storage';
 import { useAppNotification } from './src/hooks/useAppNotification';
 
-type Screen = 'splash' | 'onboarding' | 'getstarted' | 'login' | 'signup' | 'forgotpassword' | 'home';
+type Screen = 'splash' | 'onboarding' | 'getstarted' | 'login' | 'signup' | 'forgotpassword' | 'home' | 'seeall';
 
 export default function App() {
   useAppNotification();
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userName, setUserName] = useState('');
+  const [seeAllCategory, setSeeAllCategory] = useState<SeeAllCategory>('doctor');
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -83,6 +85,17 @@ export default function App() {
               setUserName('');
               setCurrentScreen('getstarted');
             }}
+            onSeeAll={(category) => {
+              setSeeAllCategory(category);
+              setCurrentScreen('seeall');
+            }}
+          />
+        );
+      case 'seeall':
+        return (
+          <SeeAllScreen
+            category={seeAllCategory}
+            onBack={() => setCurrentScreen('home')}
           />
         );
       default:
