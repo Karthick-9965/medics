@@ -153,10 +153,7 @@ export default function Home({ userName, onLogout, onSeeAll }: HomeProps) {
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Header */}
-        <HomeHeader
-          userName={userName}
-          onProfilePress={onLogout}
-        />
+        <HomeHeader userName={userName} />
 
         {/* 2. Search Bar */}
         <HomeSearchBar />

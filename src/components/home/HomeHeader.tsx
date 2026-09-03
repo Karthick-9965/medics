@@ -6,31 +6,25 @@ import { Colors } from '../../constants/Colors';
 interface HomeHeaderProps {
   userName?: string;
   onNotificationPress?: () => void;
-  onProfilePress?: () => void;
 }
 
 export default function HomeHeader({
   userName = 'User',
   onNotificationPress,
-  onProfilePress,
 }: HomeHeaderProps) {
   return (
     <View style={styles.container}>
       {/* Left Profile Avatar */}
-      <TouchableOpacity
-        style={styles.avatarContainer}
-        onPress={onProfilePress}
-        activeOpacity={0.8}
-      >
+      <View style={styles.avatarContainer}>
         <View style={styles.avatarCircle}>
           <Ionicons name="person" size={20} color={Colors.primary} />
         </View>
-      </TouchableOpacity>
+      </View>
 
       {/* Middle Greeting & Subtitle */}
       <View style={styles.textContainer}>
         <Text style={styles.greeting}>
-          Hi, {userName || 'User'} ! 
+          Hi, {userName || 'User'} !
         </Text>
         <Text style={styles.subtitle}>How are you feeling today?</Text>
       </View>
