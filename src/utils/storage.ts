@@ -7,7 +7,6 @@ export interface User {
   name: string;
   email: string;
   password?: string;
-  phone?: string;
 }
 
 export const getUsers = async (): Promise<User[]> => {
@@ -42,17 +41,11 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
   return found || null;
 };
 
-export const getUserByPhone = async (phone: string): Promise<User | null> => {
-  const users = await getUsers();
-  const found = users.find(u => u.phone === phone);
-  return found || null;
-};
-
-export const updateUserPassword = async (emailOrPhone: string, newPassword: string): Promise<boolean> => {
+export const updateUserPassword = async (email: string, newPassword: string): Promise<boolean> => {
   try {
     const users = await getUsers();
     const index = users.findIndex(
-      u => u.email.toLowerCase() === emailOrPhone.toLowerCase() || u.phone === emailOrPhone
+      u => u.email.toLowerCase() === email.toLowerCase()
     );
     if (index === -1) return false;
 
@@ -78,7 +71,7 @@ export const getLoginSession = async (): Promise<User | null> => {
     const sessionJson = await AsyncStorage.getItem(SESSION_KEY);
     return sessionJson ? JSON.parse(sessionJson) : null;
   } catch (e) {
-    console.error('Failed to retrieve login session', e);
+    console.error('Failed to get login session', e);
     return null;
   }
 };

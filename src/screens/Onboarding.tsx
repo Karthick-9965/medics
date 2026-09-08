@@ -53,7 +53,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
       {/* Top Header */}
       <View style={styles.header}>
         <View />
-        <TouchableOpacity onPress={onFinish}>
+        <TouchableOpacity style={styles.skipButton} onPress={onFinish}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>

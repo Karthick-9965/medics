@@ -14,8 +14,4 @@ export const ErrorMessages = {
     confirmRequired: '*Confirm password is required',
     mismatch: '*Passwords do not match',
   },
-  phone: {
-    required: '*Phone number is required',
-    invalid: '*Please enter a valid 10-digit phone number',
-  },
 };

@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,14 +36,10 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // OTP mock states
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [codeError, setCodeError] = useState('');
-
-  // Step 2 states
+  // Step 2 states (Manual 4-digit code)
   const [code, setCode] = useState<string[]>(['', '', '', '']);
   const codeRefs = useRef<Array<TextInput | null>>([]);
+  const [codeError, setCodeError] = useState('');
 
   // Step 3 states
   const [password, setPassword] = useState('');
@@ -56,22 +51,39 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
   // Email format check for the checkmark
   const isValidEmail = isEmailValidFormat(email);
 
-  // Handle Code Input Focus shifting
+  // Handle Code Input Focus shifting & multi-character paste
   const handleCodeChange = (text: string, index: number) => {
     const cleanText = text.replace(/[^0-9]/g, '');
-    const newCode = [...code];
-    newCode[index] = cleanText;
-    setCode(newCode);
-    setCodeError(''); // Clear error on change
 
-    if (cleanText.length > 0 && index < 3) {
+    // If user pasted a 4-digit code
+    if (cleanText.length === 4) {
+      const splitCode = cleanText.split('');
+      setCode(splitCode);
+      setCodeError('');
+      codeRefs.current[3]?.focus();
+      return;
+    }
+
+    // Single digit input
+    const singleDigit = cleanText.slice(-1);
+    const newCode = [...code];
+    newCode[index] = singleDigit;
+    setCode(newCode);
+    setCodeError('');
+
+    if (singleDigit !== '' && index < 3) {
       codeRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && code[index] === '' && index > 0) {
-      codeRefs.current[index - 1]?.focus();
+    if (e.nativeEvent.key === 'Backspace') {
+      if (code[index] === '' && index > 0) {
+        const newCode = [...code];
+        newCode[index - 1] = '';
+        setCode(newCode);
+        codeRefs.current[index - 1]?.focus();
+      }
     }
   };
 
@@ -85,13 +97,6 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
     } else if (currentStep === 3) {
       setCurrentStep(2);
     }
-  };
-
-  const generateOtpCode = () => {
-    // Generate a random 4-digit code (e.g. "5642")
-    const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(newOtp);
-    setShowOtpModal(true);
   };
 
   const handleNextStep1 = async () => {
@@ -111,27 +116,21 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
     }
     setEmailError('');
 
-    // Generate and show mock OTP popup
-    generateOtpCode();
-  };
-
-  const handleOtpModalConfirm = () => {
-    setShowOtpModal(false);
+    // Directly go to verification code step without popup
     setCurrentStep(2);
+    setTimeout(() => {
+      codeRefs.current[0]?.focus();
+    }, 200);
   };
 
   const handleNextStep2 = () => {
     const enteredCode = code.join('');
-    if (enteredCode.length !== 4) return;
-
-    if (enteredCode !== generatedOtp) {
-      setCodeError('*Invalid verification code. Please try again.');
-      // Clear inputs for re-entry
-      setCode(['', '', '', '']);
-      codeRefs.current[0]?.focus();
+    if (enteredCode.length !== 4) {
+      setCodeError('*Please enter all 4 digits');
       return;
     }
 
+    // Any 4 digit random code entered manually by user is accepted
     setCodeError('');
     setCurrentStep(3);
   };
@@ -183,7 +182,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
+          <Ionicons name="chevron-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <View style={styles.headerRightPlaceholder} />
       </View>
@@ -226,7 +225,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
             </View>
           )}
 
-          {/* Step 2: Verification Code */}
+          {/* Step 2: Verification Code Entry */}
           {currentStep === 2 && (
             <View style={styles.stepSection}>
               <Text style={styles.title}>Enter Verification Code</Text>
@@ -237,7 +236,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
                 </Text>
               </Text>
 
-              {/* Code Inputs Boxes */}
+              {/* Manual 4-Digit Code Inputs */}
               <View style={styles.codeInputsContainer}>
                 {code.map((digit, index) => (
                   <TextInput
@@ -254,6 +253,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
                     onChangeText={(text) => handleCodeChange(text, index)}
                     onKeyPress={(e) => handleKeyPress(e, index)}
                     selectTextOnFocus
+                    autoFocus={index === 0}
                   />
                 ))}
               </View>
@@ -265,7 +265,14 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
                 disabled={code.some(digit => digit === '')}
               />
 
-              <TouchableOpacity style={styles.resendContainer} onPress={generateOtpCode}>
+              <TouchableOpacity
+                style={styles.resendContainer}
+                onPress={() => {
+                  setCode(['', '', '', '']);
+                  setCodeError('');
+                  codeRefs.current[0]?.focus();
+                }}
+              >
                 <Text style={styles.resendText}>
                   Didn't receive the code? <Text style={styles.resendLink}>Resend</Text>
                 </Text>
@@ -317,27 +324,6 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Mock OTP Sent Modal Popup */}
-      <Modal visible={showOtpModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.otpCard}>
-            <View style={styles.otpIconCircle}>
-              <Ionicons name="mail-open-outline" size={40} color={Colors.primary} />
-            </View>
-            <Text style={styles.otpModalTitle}>OTP Sent Successfully</Text>
-            <Text style={styles.otpModalSubtitle}>
-              For testing purposes, we have generated a simulated 4-digit verification code for your email:
-            </Text>
-            <View style={styles.otpCodeContainer}>
-              <Text style={styles.otpCodeText}>{generatedOtp}</Text>
-            </View>
-            <TouchableOpacity style={styles.otpModalButton} onPress={handleOtpModalConfirm}>
-              <Text style={styles.otpModalButtonText}>Enter Code</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* Success Modal */}
       <SuccessModal
         visible={showSuccessModal}
@@ -360,8 +346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
-    backgroundColor: Colors.white,
+    paddingVertical: 10,
   },
   backButton: {
     padding: 8,
@@ -373,8 +358,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 10,
+    paddingTop: 16,
     paddingBottom: 40,
   },
   stepSection: {
@@ -383,7 +369,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: Colors.textDark,
+    color: Colors.black,
     marginBottom: 10,
     textAlign: 'left',
   },
@@ -392,11 +378,11 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     textAlign: 'left',
     lineHeight: 22,
-    marginBottom: 30,
+    marginBottom: 28,
   },
   boldText: {
     fontWeight: '700',
-    color: Colors.textDark,
+    color: Colors.black,
   },
   emailInputMargin: {
     marginBottom: 28,
@@ -404,7 +390,7 @@ const styles = StyleSheet.create({
   codeInputsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 28,
     gap: 12,
   },
   codeInputBox: {
@@ -415,12 +401,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     textAlign: 'center',
-    fontSize: 22,
-    fontWeight: '700',
-    color: Colors.textDark,
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.black,
   },
   codeInputBoxFilled: {
     borderColor: Colors.primary,
+    backgroundColor: Colors.bgLight,
   },
   codeInputBoxError: {
     borderColor: Colors.error,
@@ -443,74 +430,5 @@ const styles = StyleSheet.create({
   resendLink: {
     color: Colors.primary,
     fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(26, 59, 50, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  otpCard: {
-    width: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 30,
-    alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  otpIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.accentLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  otpModalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.textDark,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  otpModalSubtitle: {
-    fontSize: 14,
-    color: Colors.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  otpCodeContainer: {
-    backgroundColor: Colors.bgLight,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  otpCodeText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.primary,
-    letterSpacing: 6,
-  },
-  otpModalButton: {
-    width: '100%',
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  otpModalButtonText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '600',
   },
 });
