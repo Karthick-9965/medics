@@ -2,69 +2,65 @@ import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
 import SuccessModal from '../components/SuccessModal';
 import {
-  validateEmail,
-  validatePassword,
-  isEmailValidFormat,
-} from '../utils/validation';
+  ForgotEmailStep,
+  ForgotOtpStep,
+  ForgotNewPasswordStep,
+} from '../components/ForgotPasswordComponents';
+import { validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
 import { getUserByEmail, updateUserPassword } from '../utils/storage';
 
 interface ForgotPasswordProps {
   onBackToLogin: () => void;
-  onResetSuccess: () => void;
+  onResetSuccess: (email?: string, newPassword?: string) => void;
 }
 
 export default function ForgotPassword({ onBackToLogin, onResetSuccess }: ForgotPasswordProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  
-  // Step 1 states
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Step 2 states (Manual 4-digit code)
+  // Step 2 code inputs
   const [code, setCode] = useState<string[]>(['', '', '', '']);
   const codeRefs = useRef<Array<TextInput | null>>([]);
   const [codeError, setCodeError] = useState('');
 
-  // Step 3 states
+  // Step 3 password inputs
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Email format check for the checkmark
   const isValidEmail = isEmailValidFormat(email);
 
-  // Handle Code Input Focus shifting & multi-character paste
+  // Handle typing & 4-digit paste
   const handleCodeChange = (text: string, index: number) => {
     const cleanText = text.replace(/[^0-9]/g, '');
 
-    // If user pasted a 4-digit code
-    if (cleanText.length === 4) {
-      const splitCode = cleanText.split('');
-      setCode(splitCode);
+    // Multi-digit paste support
+    if (cleanText.length >= 2) {
+      const digits = cleanText.slice(0, 4).split('');
+      const newCode = ['', '', '', ''];
+      digits.forEach((d, i) => (newCode[i] = d));
+      setCode(newCode);
       setCodeError('');
-      codeRefs.current[3]?.focus();
+      codeRefs.current[Math.min(digits.length - 1, 3)]?.focus();
       return;
     }
 
-    // Single digit input
     const singleDigit = cleanText.slice(-1);
     const newCode = [...code];
     newCode[index] = singleDigit;
@@ -77,13 +73,11 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      if (code[index] === '' && index > 0) {
-        const newCode = [...code];
-        newCode[index - 1] = '';
-        setCode(newCode);
-        codeRefs.current[index - 1]?.focus();
-      }
+    if (e?.nativeEvent?.key === 'Backspace' && code[index] === '' && index > 0) {
+      const newCode = [...code];
+      newCode[index - 1] = '';
+      setCode(newCode);
+      codeRefs.current[index - 1]?.focus();
     }
   };
 
@@ -95,86 +89,61 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
       setCode(['', '', '', '']);
       setCodeError('');
     } else if (currentStep === 3) {
+      // Clear password fields on backward navigation
+      setPassword('');
+      setConfirmPassword('');
+      setPasswordError('');
+      setConfirmPasswordError('');
       setCurrentStep(2);
     }
   };
 
   const handleNextStep1 = async () => {
-    const errEmail = validateEmail(email);
-    if (errEmail) {
-      setEmailError(errEmail);
-      return;
-    }
-    
+    const err = validateEmail(email);
+    if (err) return setEmailError(err);
+
     setLoading(true);
     const userExists = await getUserByEmail(email);
     setLoading(false);
 
-    if (!userExists) {
-      setEmailError('*Email is not registered');
-      return;
-    }
+    if (!userExists) return setEmailError('*Email is not registered');
     setEmailError('');
 
-    // Directly go to verification code step without popup
+    setCode(['', '', '', '']);
+    setCodeError('');
+    setPassword('');
+    setConfirmPassword('');
     setCurrentStep(2);
-    setTimeout(() => {
-      codeRefs.current[0]?.focus();
-    }, 200);
+    setTimeout(() => codeRefs.current[0]?.focus(), 200);
   };
 
   const handleNextStep2 = () => {
-    const enteredCode = code.join('');
-    if (enteredCode.length !== 4) {
-      setCodeError('*Please enter all 4 digits');
-      return;
-    }
-
-    // Any 4 digit random code entered manually by user is accepted
+    if (code.join('').length !== 4) return setCodeError('*Please enter all 4 digits');
     setCodeError('');
+    setPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+    setConfirmPasswordError('');
     setCurrentStep(3);
   };
 
   const handleNextStep3 = async () => {
-    let hasError = false;
+    const errPass = validatePassword(password);
+    if (errPass) setPasswordError(errPass);
+    else setPasswordError('');
 
-    // Password check
-    const errPassword = validatePassword(password);
-    if (errPassword) {
-      setPasswordError(errPassword);
-      hasError = true;
-    } else {
-      setPasswordError('');
-    }
+    if (!confirmPassword) setConfirmPasswordError(ErrorMessages.password.confirmRequired);
+    else if (password !== confirmPassword) setConfirmPasswordError(ErrorMessages.password.mismatch);
+    else setConfirmPasswordError('');
 
-    // Confirm password check
-    if (!confirmPassword) {
-      setConfirmPasswordError(ErrorMessages.password.confirmRequired);
-      hasError = true;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError(ErrorMessages.password.mismatch);
-      hasError = true;
-    } else {
-      setConfirmPasswordError('');
-    }
-
-    if (hasError) return;
+    if (errPass || !confirmPassword || password !== confirmPassword) return;
 
     setLoading(true);
     const success = await updateUserPassword(email, password);
     setLoading(false);
 
-    if (!success) {
-      setPasswordError('*Failed to update password. Try again.');
-      return;
-    }
-
+    if (!success) return setPasswordError('*Failed to update password. Try again.');
     setShowSuccessModal(true);
-  };
-
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    onResetSuccess();
   };
 
   return (
@@ -184,7 +153,6 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="chevron-back" size={24} color={Colors.black} />
         </TouchableOpacity>
-        <View style={styles.headerRightPlaceholder} />
       </View>
 
       <KeyboardAvoidingView
@@ -192,135 +160,58 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
         style={styles.keyboardView}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          {/* Step 1: Input Email */}
+          {/* STEP 1: Email Component */}
           {currentStep === 1 && (
-            <View style={styles.stepSection}>
-              <Text style={styles.title}>Forgot Your Password?</Text>
-              <Text style={styles.subtitle}>
-                Enter your email address, we will send you confirmation code
-              </Text>
-
-              {/* Input Area */}
-              <InputField
-                icon="mail"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setEmailError('');
-                }}
-                keyboardType="email-address"
-                isValid={isValidEmail}
-                error={emailError}
-                style={styles.emailInputMargin}
-              />
-
-              <Button
-                title="Reset Password"
-                onPress={handleNextStep1}
-                loading={loading}
-                disabled={!isValidEmail}
-              />
-            </View>
+            <ForgotEmailStep
+              email={email}
+              emailError={emailError}
+              loading={loading}
+              isValidEmail={isValidEmail}
+              onChangeEmail={(t) => {
+                setEmail(t);
+                setEmailError('');
+              }}
+              onSubmit={handleNextStep1}
+            />
           )}
 
-          {/* Step 2: Verification Code Entry */}
+          {/* STEP 2: OTP Component */}
           {currentStep === 2 && (
-            <View style={styles.stepSection}>
-              <Text style={styles.title}>Enter Verification Code</Text>
-              <Text style={styles.subtitle}>
-                Enter code that we have sent to your email{' '}
-                <Text style={styles.boldText}>
-                  {email.length > 5 ? email.substring(0, 3) + '***' : email}
-                </Text>
-              </Text>
-
-              {/* Manual 4-Digit Code Inputs */}
-              <View style={styles.codeInputsContainer}>
-                {code.map((digit, index) => (
-                  <TextInput
-                    key={index}
-                    ref={(el) => { codeRefs.current[index] = el; }}
-                    style={[
-                      styles.codeInputBox,
-                      digit !== '' && styles.codeInputBoxFilled,
-                      !!codeError && styles.codeInputBoxError,
-                    ]}
-                    maxLength={1}
-                    keyboardType="number-pad"
-                    value={digit}
-                    onChangeText={(text) => handleCodeChange(text, index)}
-                    onKeyPress={(e) => handleKeyPress(e, index)}
-                    selectTextOnFocus
-                    autoFocus={index === 0}
-                  />
-                ))}
-              </View>
-              {!!codeError && <Text style={styles.inlineErrorText}>{codeError}</Text>}
-
-              <Button
-                title="Verify"
-                onPress={handleNextStep2}
-                disabled={code.some(digit => digit === '')}
-              />
-
-              <TouchableOpacity
-                style={styles.resendContainer}
-                onPress={() => {
-                  setCode(['', '', '', '']);
-                  setCodeError('');
-                  codeRefs.current[0]?.focus();
-                }}
-              >
-                <Text style={styles.resendText}>
-                  Didn't receive the code? <Text style={styles.resendLink}>Resend</Text>
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <ForgotOtpStep
+              email={email}
+              code={code}
+              codeError={codeError}
+              codeRefs={codeRefs}
+              onCodeChange={handleCodeChange}
+              onKeyPress={handleKeyPress}
+              onVerify={handleNextStep2}
+              onResend={() => {
+                setCode(['', '', '', '']);
+                setCodeError('');
+                codeRefs.current[0]?.focus();
+              }}
+            />
           )}
 
-          {/* Step 3: Create New Password */}
+          {/* STEP 3: Create New Password Component */}
           {currentStep === 3 && (
-            <View style={styles.stepSection}>
-              <Text style={styles.title}>Create New Password</Text>
-              <Text style={styles.subtitle}>Create your new password to login</Text>
-
-              {/* Password Input */}
-              <InputField
-                icon="lock"
-                placeholder="Enter password (min 6 chars)"
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  setPasswordError('');
-                }}
-                isPassword
-                error={passwordError}
-              />
-
-              {/* Confirm Password Input */}
-              <InputField
-                icon="lock"
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  setConfirmPasswordError('');
-                }}
-                isPassword
-                error={confirmPasswordError}
-              />
-
-              <Button
-                title="Create Password"
-                onPress={handleNextStep3}
-                loading={loading}
-                disabled={!password || password.length < 6 || password !== confirmPassword}
-              />
-            </View>
+            <ForgotNewPasswordStep
+              password={password}
+              confirmPassword={confirmPassword}
+              passwordError={passwordError}
+              confirmPasswordError={confirmPasswordError}
+              loading={loading}
+              onChangePassword={(t) => {
+                setPassword(t);
+                setPasswordError('');
+              }}
+              onChangeConfirmPassword={(t) => {
+                setConfirmPassword(t);
+                setConfirmPasswordError('');
+              }}
+              onSubmit={handleNextStep3}
+            />
           )}
-
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -330,7 +221,10 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess }: Forgot
         title="Success"
         subtitle="You have successfully reset your password."
         buttonTitle="Login"
-        onPressButton={handleSuccessModalClose}
+        onPressButton={() => {
+          setShowSuccessModal(false);
+          onResetSuccess(email, password);
+        }}
       />
     </SafeAreaView>
   );
@@ -342,17 +236,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   backButton: {
     padding: 8,
-  },
-  headerRightPlaceholder: {
-    width: 40,
+    alignSelf: 'flex-start',
   },
   keyboardView: {
     flex: 1,
@@ -362,73 +251,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  stepSection: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.black,
-    marginBottom: 10,
-    textAlign: 'left',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.secondary,
-    textAlign: 'left',
-    lineHeight: 22,
-    marginBottom: 28,
-  },
-  boldText: {
-    fontWeight: '700',
-    color: Colors.black,
-  },
-  emailInputMargin: {
-    marginBottom: 28,
-  },
-  codeInputsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 28,
-    gap: 12,
-  },
-  codeInputBox: {
-    flex: 1,
-    height: 64,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.black,
-  },
-  codeInputBoxFilled: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.bgLight,
-  },
-  codeInputBoxError: {
-    borderColor: Colors.error,
-  },
-  inlineErrorText: {
-    color: Colors.error,
-    fontSize: 13,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  resendContainer: {
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  resendText: {
-    fontSize: 14,
-    color: Colors.secondary,
-  },
-  resendLink: {
-    color: Colors.primary,
-    fontWeight: '700',
   },
 });

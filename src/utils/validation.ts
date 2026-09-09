@@ -17,6 +17,9 @@ export const validateName = (name: string): string => {
 export const validatePassword = (password: string): string => {
   if (!password) return ErrorMessages.password.required;
   if (password.length < 6) return ErrorMessages.password.tooShort;
+  if (!/[A-Z]/.test(password)) return ErrorMessages.password.needsUppercase;
+  if (!/[0-9]/.test(password)) return ErrorMessages.password.needsNumber;
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return ErrorMessages.password.needsSpecial;
   return '';
 };
 

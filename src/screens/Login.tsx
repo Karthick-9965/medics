@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -24,16 +24,30 @@ interface LoginProps {
   onLoginSuccess: (name: string) => void;
   onSignUpLink: () => void;
   onForgotPassword: () => void;
+  initialEmail?: string;
+  initialPassword?: string;
 }
 
-export default function Login({ onBack, onLoginSuccess, onSignUpLink, onForgotPassword }: LoginProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function Login({
+  onBack,
+  onLoginSuccess,
+  onSignUpLink,
+  onForgotPassword,
+  initialEmail = '',
+  initialPassword = '',
+}: LoginProps) {
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState(initialPassword);
   const [emailError, setEmailError] = useState('');
   const [isWrongPassword, setIsWrongPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (initialEmail) setEmail(initialEmail);
+    if (initialPassword) setPassword(initialPassword);
+  }, [initialEmail, initialPassword]);
 
   // Real-time email validation format check (for checkmark indicator)
   const isValidEmail = isEmailValidFormat(email);

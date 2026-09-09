@@ -21,6 +21,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userName, setUserName] = useState('');
   const [seeAllCategory, setSeeAllCategory] = useState<SeeAllCategory>('doctor');
+  const [loginPrefill, setLoginPrefill] = useState<{ email?: string; password?: string }>({});
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -43,20 +44,38 @@ export default function App() {
       case 'getstarted':
         return (
           <GetStarted
-            onLogin={() => setCurrentScreen('login')}
-            onSignUp={() => setCurrentScreen('signup')}
+            onLogin={() => {
+              setLoginPrefill({});
+              setCurrentScreen('login');
+            }}
+            onSignUp={() => {
+              setLoginPrefill({});
+              setCurrentScreen('signup');
+            }}
           />
         );
       case 'login':
         return (
           <Login
-            onBack={() => setCurrentScreen('getstarted')}
+            initialEmail={loginPrefill.email || ''}
+            initialPassword={loginPrefill.password || ''}
+            onBack={() => {
+              setLoginPrefill({});
+              setCurrentScreen('getstarted');
+            }}
             onLoginSuccess={(name) => {
+              setLoginPrefill({});
               setUserName(name);
               setCurrentScreen('home');
             }}
-            onSignUpLink={() => setCurrentScreen('signup')}
-            onForgotPassword={() => setCurrentScreen('forgotpassword')}
+            onSignUpLink={() => {
+              setLoginPrefill({});
+              setCurrentScreen('signup');
+            }}
+            onForgotPassword={() => {
+              setLoginPrefill({});
+              setCurrentScreen('forgotpassword');
+            }}
           />
         );
       case 'signup':
@@ -73,7 +92,13 @@ export default function App() {
         return (
           <ForgotPassword
             onBackToLogin={() => setCurrentScreen('login')}
-            onResetSuccess={() => setCurrentScreen('login')}
+            onResetSuccess={(resetEmail, newPassword) => {
+              setLoginPrefill({
+                email: resetEmail,
+                password: newPassword,
+              });
+              setCurrentScreen('login');
+            }}
           />
         );
       case 'home':
