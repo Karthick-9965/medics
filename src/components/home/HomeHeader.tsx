@@ -1,25 +1,37 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
 interface HomeHeaderProps {
   userName?: string;
+  avatarUri?: string | null;
+  onProfilePress?: () => void;
   onNotificationPress?: () => void;
 }
 
 export default function HomeHeader({
   userName = 'User',
+  avatarUri = null,
+  onProfilePress,
   onNotificationPress,
 }: HomeHeaderProps) {
   return (
     <View style={styles.container}>
-      {/* Left Profile Avatar */}
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={20} color={Colors.primary} />
-        </View>
-      </View>
+      {/* Left Profile Avatar (Clickable) */}
+      <TouchableOpacity
+        style={styles.avatarContainer}
+        onPress={onProfilePress}
+        activeOpacity={0.7}
+      >
+        {avatarUri ? (
+          <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+        ) : (
+          <View style={styles.avatarCircle}>
+            <Ionicons name="person" size={22} color={Colors.primary} />
+          </View>
+        )}
+      </TouchableOpacity>
 
       {/* Middle Greeting & Subtitle */}
       <View style={styles.textContainer}>
@@ -56,9 +68,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#E8EFEF',
+    backgroundColor: Colors.accentLight,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
   },
   textContainer: {
     flex: 1,

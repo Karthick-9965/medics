@@ -21,7 +21,7 @@ import { getUserByEmail, saveLoginSession } from '../utils/storage';
 
 interface LoginProps {
   onBack: () => void;
-  onLoginSuccess: (name: string) => void;
+  onLoginSuccess: (name: string, email?: string) => void;
   onSignUpLink: () => void;
   onForgotPassword: () => void;
   initialEmail?: string;
@@ -64,33 +64,31 @@ export default function Login({
       setEmailError('');
     }
 
+    // Password validation (required)
+    if (!password) {
+      setIsWrongPassword(true);
+      hasError = true;
+    } else {
+      setIsWrongPassword(false);
+    }
+
     if (hasError) return;
 
     setLoading(true);
-    // Fetch registered user from AsyncStorage
-    const registeredUser = await getUserByEmail(email);
+    // Find user in AsyncStorage
+    const user = await getUserByEmail(email);
     setLoading(false);
 
-    if (!registeredUser) {
-      setEmailError('*Email is not registered');
-      return;
-    }
-
-    // Verify Password (Also allow mockup testing using wrong password triggers 'wrong' or 'error')
-    const lowercasePassword = password.toLowerCase();
-    const isMockWrong = lowercasePassword === 'wrong' || lowercasePassword === 'error';
-    const isPasswordCorrect = registeredUser.password === password;
-
-    if (isMockWrong || !isPasswordCorrect) {
+    if (!user || user.password !== password) {
       setIsWrongPassword(true);
       return;
     }
 
     setIsWrongPassword(false);
-    setLoggedInUser(registeredUser);
+    setLoggedInUser({ name: user.name, email: user.email });
 
-    // Save session to AsyncStorage
-    await saveLoginSession(registeredUser);
+    // Save session
+    await saveLoginSession(user);
 
     // Show Success Modal
     setShowSuccessModal(true);
@@ -99,10 +97,10 @@ export default function Login({
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     if (loggedInUser) {
-      onLoginSuccess(loggedInUser.name);
+      onLoginSuccess(loggedInUser.name, loggedInUser.email);
     } else {
       const displayName = email.split('@')[0];
-      onLoginSuccess(displayName.charAt(0).toUpperCase() + displayName.slice(1));
+      onLoginSuccess(displayName.charAt(0).toUpperCase() + displayName.slice(1), email);
     }
   };
 

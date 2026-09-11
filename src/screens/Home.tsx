@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import HomeHeader from '../components/home/HomeHeader';
 import HomeSearchBar from '../components/home/HomeSearchBar';
@@ -16,7 +17,12 @@ import ArticleCard, { ArticleCardProps } from '../components/home/ArticleCard';
 import PharmacyCard, { PharmacyCardProps } from '../components/home/PharmacyCard';
 import HospitalCard, { HospitalCardProps } from '../components/home/HospitalCard';
 import EmergencyCareCard from '../components/home/EmergencyCareCard';
-import Button from '../components/Button';
+import BottomTabBar, { TabKey } from '../components/bottomTab/BottomTabBar';
+import Messages from './Messages';
+import Schedule from './Schedule';
+import Profile from './Profile';
+import HomeProfileModal from '../components/home/HomeProfileModal';
+import LogoutModal from '../components/LogoutModal';
 import { SeeAllCategory } from './SeeAllScreen';
 
 interface DoctorData extends DoctorCardProps {
@@ -37,6 +43,7 @@ interface HospitalData extends HospitalCardProps {
 
 interface HomeProps {
   userName?: string;
+  userEmail?: string;
   onLogout?: () => void;
   onSeeAll?: (category: SeeAllCategory) => void;
 }
@@ -144,16 +151,54 @@ const hospitals: HospitalData[] = [
   },
 ];
 
-export default function Home({ userName, onLogout, onSeeAll }: HomeProps) {
-  return (
+export default function Home({ userName, userEmail, onLogout, onSeeAll }: HomeProps) {
+  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [showHomeProfileModal, setShowHomeProfileModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const effectiveEmail = userEmail || (userName ? `${userName.toLowerCase().replace(/\s+/g, '')}@example.com` : 'user@example.com');
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      try {
+        const savedAvatar = await AsyncStorage.getItem('@user_avatar_uri');
+        if (savedAvatar) {
+          setAvatarUri(savedAvatar);
+        }
+      } catch (e) {
+        console.error('Failed to load avatar uri from storage', e);
+      }
+    };
+    loadAvatar();
+  }, []);
+
+  const handleAvatarChange = async (uri: string | null) => {
+    setAvatarUri(uri);
+    try {
+      if (uri) {
+        await AsyncStorage.setItem('@user_avatar_uri', uri);
+      } else {
+        await AsyncStorage.removeItem('@user_avatar_uri');
+      }
+    } catch (e) {
+      console.error('Failed to save avatar uri to storage', e);
+    }
+  };
+
+  const renderHomeContent = () => (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Header */}
-        <HomeHeader userName={userName} />
+        {/* 1. Header with Clickable Avatar */}
+        <HomeHeader
+          userName={userName}
+          avatarUri={avatarUri}
+          onProfilePress={() => setShowHomeProfileModal(true)}
+        />
 
         {/* 2. Search Bar */}
         <HomeSearchBar />
@@ -262,23 +307,77 @@ export default function Home({ userName, onLogout, onSeeAll }: HomeProps) {
           <SectionHeader title="Emergency Care" showSeeAll={false} />
           <EmergencyCareCard />
         </View>
-
-        {/* 10. Log Out Button */}
-        {onLogout && (
-          <View style={styles.logoutSection}>
-            <Button
-              title="Log Out"
-              variant="outline"
-              onPress={onLogout}
-            />
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
+  );
+
+  const renderActiveScreen = () => {
+    switch (activeTab) {
+      case 'home':
+        return renderHomeContent();
+      case 'messages':
+        return <Messages />;
+      case 'schedule':
+        return <Schedule />;
+      case 'profile':
+        return (
+          <Profile
+            userName={userName}
+            userEmail={effectiveEmail}
+            avatarUri={avatarUri}
+            onAvatarChange={handleAvatarChange}
+            onLogout={() => setShowLogoutModal(true)}
+            onNavigateToSchedule={() => setActiveTab('schedule')}
+            onNavigateToSavedDoctors={() => onSeeAll?.('doctor')}
+          />
+        );
+      default:
+        return renderHomeContent();
+    }
+  };
+
+  return (
+    <View style={styles.mainWrapper}>
+      <View style={styles.screenContainer}>{renderActiveScreen()}</View>
+      <BottomTabBar
+        activeTab={activeTab}
+        onTabPress={setActiveTab}
+        unreadCount={2}
+      />
+
+      {/* Profile Details Sheet (Opened from Home Avatar) */}
+      <HomeProfileModal
+        visible={showHomeProfileModal}
+        userName={userName || 'User'}
+        userEmail={effectiveEmail}
+        avatarUri={avatarUri}
+        onAvatarPicked={handleAvatarChange}
+        onViewFullProfile={() => setActiveTab('profile')}
+        onLogoutPress={() => setShowLogoutModal(true)}
+        onClose={() => setShowHomeProfileModal(false)}
+      />
+
+      {/* Global Custom Logout Modal */}
+      <LogoutModal
+        visible={showLogoutModal}
+        onConfirmLogout={() => {
+          setShowLogoutModal(false);
+          onLogout?.();
+        }}
+        onCancel={() => setShowLogoutModal(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainWrapper: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  screenContainer: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
@@ -296,10 +395,5 @@ const styles = StyleSheet.create({
   horizontalList: {
     paddingLeft: 20,
     paddingRight: 10,
-  },
-  logoutSection: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 16,
   },
 });

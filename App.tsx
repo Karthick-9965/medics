@@ -20,6 +20,7 @@ export default function App() {
   useAppNotification();
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [seeAllCategory, setSeeAllCategory] = useState<SeeAllCategory>('doctor');
   const [loginPrefill, setLoginPrefill] = useState<{ email?: string; password?: string }>({});
 
@@ -32,6 +33,7 @@ export default function App() {
               const session = await getLoginSession();
               if (session) {
                 setUserName(session.name);
+                setUserEmail(session.email);
                 setCurrentScreen('home');
               } else {
                 setCurrentScreen('onboarding');
@@ -63,9 +65,10 @@ export default function App() {
               setLoginPrefill({});
               setCurrentScreen('getstarted');
             }}
-            onLoginSuccess={(name) => {
+            onLoginSuccess={(name, email) => {
               setLoginPrefill({});
               setUserName(name);
+              if (email) setUserEmail(email);
               setCurrentScreen('home');
             }}
             onSignUpLink={() => {
@@ -105,9 +108,11 @@ export default function App() {
         return (
           <Home
             userName={userName}
+            userEmail={userEmail}
             onLogout={async () => {
               await clearLoginSession();
               setUserName('');
+              setUserEmail('');
               setCurrentScreen('getstarted');
             }}
             onSeeAll={(category) => {
