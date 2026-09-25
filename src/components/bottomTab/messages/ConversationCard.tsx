@@ -30,37 +30,40 @@ export default function ConversationCard({
   conversation,
   onPress,
 }: ConversationCardProps) {
+  const isUnread = (conversation.unread || 0) > 0;
+
   return (
     <TouchableOpacity
-      style={styles.chatCard}
+      style={[styles.chatCard, isUnread && styles.chatCardUnread]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Avatar with online status */}
+      {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Image source={conversation.avatar} style={styles.avatar} />
-        {conversation.online && <View style={styles.onlineBadge} />}
       </View>
 
       {/* Details */}
       <View style={styles.chatDetails}>
         <View style={styles.chatHeaderRow}>
-          <Text style={styles.doctorName} numberOfLines={1}>
+          <Text style={[styles.doctorName, isUnread && styles.doctorNameUnread]} numberOfLines={1}>
             {conversation.name}
           </Text>
-          <Text style={styles.chatTime}>{conversation.time}</Text>
+          <Text style={[styles.chatTime, isUnread && styles.chatTimeUnread]}>{conversation.time}</Text>
         </View>
         <Text style={styles.specialtyText}>{conversation.specialization}</Text>
-        <Text style={styles.lastMessageText} numberOfLines={1}>
+        <Text style={[styles.lastMessageText, isUnread && styles.lastMessageUnread]} numberOfLines={1}>
           {conversation.lastMessage}
         </Text>
       </View>
 
       {/* Unread badge / checkmark */}
       <View style={styles.badgeColumn}>
-        {conversation.unread > 0 ? (
+        {isUnread ? (
           <View style={styles.unreadBadge}>
-            <Text style={styles.unreadBadgeText}>{conversation.unread}</Text>
+            <Text style={styles.unreadBadgeText}>
+              {conversation.unread > 99 ? '99+' : conversation.unread}
+            </Text>
           </View>
         ) : (
           <Ionicons name="checkmark-done" size={16} color={Colors.primary} />
@@ -75,8 +78,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.dividerLine,
+  },
+  chatCardUnread: {
+    backgroundColor: Colors.accentLight + '40',
   },
   avatarContainer: {
     position: 'relative',
@@ -87,17 +95,6 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     backgroundColor: Colors.bgLight,
-  },
-  onlineBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#34C759',
-    borderWidth: 2,
-    borderColor: Colors.white,
   },
   chatDetails: {
     flex: 1,
@@ -116,9 +113,17 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 6,
   },
+  doctorNameUnread: {
+    color: Colors.black,
+    fontWeight: '800',
+  },
   chatTime: {
     fontSize: 11,
     color: Colors.secondary,
+  },
+  chatTimeUnread: {
+    color: Colors.primary,
+    fontWeight: '700',
   },
   specialtyText: {
     fontSize: 12,
@@ -130,23 +135,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.secondary,
   },
+  lastMessageUnread: {
+    color: Colors.textDark,
+    fontWeight: '700',
+  },
   badgeColumn: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    minWidth: 24,
+    minWidth: 26,
   },
   unreadBadge: {
     backgroundColor: Colors.primary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: 11,
+    minWidth: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    elevation: 2,
   },
   unreadBadgeText: {
     color: Colors.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

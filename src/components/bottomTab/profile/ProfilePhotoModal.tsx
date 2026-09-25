@@ -1,16 +1,9 @@
-﻿import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  Image,
-  Alert,
-} from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../../constants/Colors';
+import ModalHeader from '../../common/ModalHeader';
 
 interface ProfilePhotoModalProps {
   visible: boolean;
@@ -24,76 +17,69 @@ interface ProfilePhotoModalProps {
 export default function ProfilePhotoModal({
   visible,
   avatarUri,
-  userName = 'User',
-  userEmail = 'user@example.com',
+  userName = 'Sathish Kumar',
+  userEmail = 'sathish.kumar@telemed.com',
   onAvatarPicked,
   onClose,
 }: ProfilePhotoModalProps) {
-  const handlePickFromGallery = async () => {
+  const handleGallery = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permission Required',
-          'Please allow access to your photo gallery to select a profile picture.'
-        );
+      const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!res.granted) {
+        Alert.alert('Permission', 'Gallery permission required.');
         return;
       }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         onAvatarPicked(result.assets[0].uri);
         onClose();
       }
     } catch (e) {
-      console.error('Error picking image from gallery', e);
-      Alert.alert('Error', 'Failed to pick image from gallery. Please try again.');
+      console.log(e);
     }
   };
 
-  const handleTakePhoto = async () => {
+  const handleCamera = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permission Required',
-          'Please allow camera access to take a profile picture.'
-        );
+      const res = await ImagePicker.requestCameraPermissionsAsync();
+      if (!res.granted) {
+        Alert.alert('Permission', 'Camera permission required.');
         return;
       }
-
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets && result.assets.length > 0) {
         onAvatarPicked(result.assets[0].uri);
         onClose();
       }
     } catch (e) {
-      console.error('Error taking photo', e);
-      Alert.alert('Error', 'Failed to capture photo. Please try again.');
+      console.log(e);
     }
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemove = () => {
     onAvatarPicked(null);
     onClose();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View style={styles.sheetContainer}>
-          {/* Pull Indicator */}
+          {/* Drag Indicator */}
           <View style={styles.indicatorWrap}>
             <View style={styles.indicator} />
           </View>
@@ -107,11 +93,11 @@ export default function ProfilePhotoModal({
               <Text style={styles.sheetTitle}>Profile Photo</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton} activeOpacity={0.7}>
-              <Ionicons name="close" size={22} color={Colors.textDark} />
+              <Ionicons name="close" size={22} color={Colors.secondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Current Avatar & User Info Preview */}
+          {/* Current Avatar Preview */}
           <View style={styles.previewSection}>
             <View style={styles.avatarWrapper}>
               {avatarUri ? (
@@ -122,8 +108,8 @@ export default function ProfilePhotoModal({
                 </View>
               )}
             </View>
-            <Text style={styles.previewName}>{userName}</Text>
-            <Text style={styles.previewEmail}>{userEmail}</Text>
+            {userName ? <Text style={styles.previewName}>{userName}</Text> : null}
+            {userEmail ? <Text style={styles.previewEmail}>{userEmail}</Text> : null}
           </View>
 
           {/* Action Options List */}
@@ -131,7 +117,7 @@ export default function ProfilePhotoModal({
             {/* 1. Choose from Gallery */}
             <TouchableOpacity
               style={styles.optionCard}
-              onPress={handlePickFromGallery}
+              onPress={handleGallery}
               activeOpacity={0.7}
             >
               <View style={[styles.optionIconCircle, { backgroundColor: Colors.accentLight }]}>
@@ -147,7 +133,7 @@ export default function ProfilePhotoModal({
             {/* 2. Take Photo */}
             <TouchableOpacity
               style={styles.optionCard}
-              onPress={handleTakePhoto}
+              onPress={handleCamera}
               activeOpacity={0.7}
             >
               <View style={[styles.optionIconCircle, { backgroundColor: '#EBF3FF' }]}>
@@ -164,19 +150,19 @@ export default function ProfilePhotoModal({
             {avatarUri && (
               <TouchableOpacity
                 style={[styles.optionCard, styles.removeOptionCard]}
-                onPress={handleRemovePhoto}
+                onPress={handleRemove}
                 activeOpacity={0.7}
               >
-                <View style={[styles.optionIconCircle, { backgroundColor: Colors.redBg }]}>
-                  <Ionicons name="trash-outline" size={20} color={Colors.logoutRed} />
+                <View style={[styles.optionIconCircle, { backgroundColor: Colors.redBg || '#FFF5F5' }]}>
+                  <Ionicons name="trash-outline" size={20} color={Colors.logoutRed || '#E53E3E'} />
                 </View>
                 <View style={styles.optionTextWrap}>
-                  <Text style={[styles.optionTitle, { color: Colors.logoutRed }]}>
+                  <Text style={[styles.optionTitle, { color: Colors.logoutRed || '#E53E3E' }]}>
                     Remove Current Photo
                   </Text>
                   <Text style={styles.optionSubtitle}>Reset to default profile avatar</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.logoutRed} />
+                <Ionicons name="chevron-forward" size={18} color={Colors.logoutRed || '#E53E3E'} />
               </TouchableOpacity>
             )}
           </View>
@@ -232,7 +218,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.dividerLine,
+    borderBottomColor: Colors.dividerLine || Colors.border,
   },
   headerTitleWrap: {
     flexDirection: 'row',
@@ -301,12 +287,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   removeOptionCard: {
     borderColor: '#FFD7D7',
     backgroundColor: '#FFF8F8',
+    borderWidth: 1,
   },
   optionIconCircle: {
     width: 44,

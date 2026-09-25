@@ -1,0 +1,150 @@
+import { ConversationItem } from '../components/bottomTab/messages/ConversationCard';
+import { ChatMessage } from '../components/bottomTab/messages/ChatDetailModal';
+
+export const CONVERSATIONS: ConversationItem[] = [
+  // Doctors
+  {
+    id: '1',
+    name: 'Dr. Marcus Horizon',
+    specialization: 'Cardiologist',
+    avatar: require('../assets/images/home/doctors/marcus-horizon.png'),
+    lastMessage: 'Your ECG readings look great. Keep up the morning walks!',
+    time: '10:24 AM',
+    unread: 2,
+    online: true,
+    type: 'doctor',
+  },
+  {
+    id: '2',
+    name: 'Dr. Maria Elena',
+    specialization: 'Psychologist',
+    avatar: require('../assets/images/home/doctors/maria-elena.png'),
+    lastMessage: 'Remember to practice the 5-minute breathing exercise before bedtime.',
+    time: 'Yesterday',
+    unread: 0,
+    online: true,
+    type: 'doctor',
+  },
+  {
+    id: '3',
+    name: 'Dr. Stefi Jessi',
+    specialization: 'Orthopedist',
+    avatar: require('../assets/images/home/doctors/stefi-jessi.png'),
+    lastMessage: 'Apply the cold compress twice daily and avoid heavy lifting.',
+    time: 'Jun 12',
+    unread: 1,
+    online: true,
+    type: 'doctor',
+  },
+  {
+    id: '4',
+    name: 'Dr. Gerty Cori',
+    specialization: 'General Specialist',
+    avatar: require('../assets/images/home/doctors/doctor-gerty.png'),
+    lastMessage: 'Your routine blood checkup report has been reviewed.',
+    time: 'Jun 10',
+    unread: 0,
+    online: false,
+    type: 'doctor',
+  },
+  {
+    id: '5',
+    name: 'Dr. Diandra',
+    specialization: 'Dentist',
+    avatar: require('../assets/images/home/doctors/doctor-diandra.png'),
+    lastMessage: 'Don’t forget our dental cleanup appointment next week.',
+    time: 'Jun 08',
+    unread: 0,
+    online: true,
+    type: 'doctor',
+  },
+
+  // Clinics & Hospitals
+  {
+    id: 'c1',
+    name: 'Apollo Speciality Helpdesk',
+    specialization: 'General Hospital & OPD Support',
+    avatar: require('../assets/images/home/hospitals/apollo.png'),
+    lastMessage: 'Your digital consultation invoice and receipt have been generated.',
+    time: '09:15 AM',
+    unread: 1,
+    online: true,
+    type: 'clinic',
+  },
+  {
+    id: 'c2',
+    name: 'City Care Emergency & Clinic',
+    specialization: '24/7 Clinical & Ambulance Desk',
+    avatar: require('../assets/images/home/hospitals/city-care.png'),
+    lastMessage: 'Ambulance dispatch tracking is active for emergency hotline 108.',
+    time: 'Yesterday',
+    unread: 0,
+    online: true,
+    type: 'clinic',
+  },
+  {
+    id: 'c3',
+    name: 'Sunrise Wellness & Diagnostics',
+    specialization: 'Blood Tests & Diagnostic Lab',
+    avatar: require('../assets/images/home/hospitals/sunrise.png'),
+    lastMessage: 'Your Complete Blood Count (CBC) lab report is ready for download.',
+    time: 'Jun 14',
+    unread: 0,
+    online: false,
+    type: 'clinic',
+  },
+  {
+    id: 'c4',
+    name: 'Grace Memorial Family Clinic',
+    specialization: 'Outpatient Appointments & Care',
+    avatar: require('../assets/images/home/hospitals/grace-memorial.png'),
+    lastMessage: 'Vaccination and pediatric checkup slots are open for next Monday.',
+    time: 'Jun 11',
+    unread: 0,
+    online: true,
+    type: 'clinic',
+  },
+];
+
+export const INITIAL_CHAT_MESSAGES: { [id: string]: ChatMessage[] } = {
+  '1': [
+    { sender: 'doctor', text: 'Hello! How have you been feeling since our last checkup?', time: '10:15 AM' },
+    { sender: 'user', text: 'Hi Dr. Marcus! My blood pressure has stabilized, around 120/80.', time: '10:18 AM' },
+    { sender: 'doctor', text: 'Your ECG readings look great. Keep up the morning walks!', time: '10:24 AM' },
+  ],
+  '2': [
+    { sender: 'doctor', text: 'Hello! How did the mindfulness exercises work this week?', time: 'Yesterday' },
+    { sender: 'user', text: 'It helped a lot with falling asleep quickly!', time: 'Yesterday' },
+    { sender: 'doctor', text: 'Remember to practice the 5-minute breathing exercise before bedtime.', time: 'Yesterday' },
+  ],
+  '3': [
+    { sender: 'doctor', text: 'Good morning! How is the knee stiffness feeling today?', time: 'Jun 12' },
+    { sender: 'user', text: 'Much better with the prescribed muscle cream.', time: 'Jun 12' },
+    { sender: 'doctor', text: 'Apply the cold compress twice daily and avoid heavy lifting.', time: 'Jun 12' },
+  ],
+  '4': [
+    { sender: 'doctor', text: 'Hello, your latest vitamin D and hemogram test came in.', time: 'Jun 10' },
+    { sender: 'doctor', text: 'Your routine blood checkup report has been reviewed.', time: 'Jun 10' },
+  ],
+  '5': [
+    { sender: 'doctor', text: 'Hi! Please rinse with warm salt water after brushing.', time: 'Jun 08' },
+    { sender: 'doctor', text: 'Don’t forget our dental cleanup appointment next week.', time: 'Jun 08' },
+  ],
+  'c1': [
+    { sender: 'doctor', text: 'Welcome to Apollo Speciality Hospital Patient Helpdesk!', time: '09:10 AM' },
+    { sender: 'user', text: 'Hi, I needed my consultation invoice for insurance claim.', time: '09:12 AM' },
+    { sender: 'doctor', text: 'Your digital consultation invoice and receipt have been generated.', time: '09:15 AM' },
+  ],
+  'c2': [
+    { sender: 'doctor', text: 'City Care Emergency Helpline is connected 24/7.', time: 'Yesterday' },
+    { sender: 'doctor', text: 'Ambulance dispatch tracking is active for emergency hotline 108.', time: 'Yesterday' },
+  ],
+  'c3': [
+    { sender: 'doctor', text: 'Sunrise Diagnostic Labs: Sample collection confirmed.', time: 'Jun 14' },
+    { sender: 'doctor', text: 'Your Complete Blood Count (CBC) lab report is ready for download.', time: 'Jun 14' },
+  ],
+  'c4': [
+    { sender: 'doctor', text: 'Grace Memorial Clinic: Outpatient department registration is open.', time: 'Jun 11' },
+    { sender: 'doctor', text: 'Vaccination and pediatric checkup slots are open for next Monday.', time: 'Jun 11' },
+  ],
+};

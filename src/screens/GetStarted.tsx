@@ -1,8 +1,8 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, View, Text } from 'react-native';
-import Logo from '../components/Logo';
-import Button from '../components/Button';
+import Logo from '../components/ui/Logo';
+import Button from '../components/ui/Button';
 import { Colors } from '../constants/Colors';
 
 interface GetStartedProps {

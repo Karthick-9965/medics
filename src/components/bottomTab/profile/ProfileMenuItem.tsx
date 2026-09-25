@@ -5,7 +5,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 
 export interface ProfileMenuItemProps {
@@ -83,7 +83,7 @@ export default function ProfileMenuItem({
       <Ionicons
         name="chevron-forward"
         size={18}
-        color={isDestructive ? Colors.logoutRed : Colors.secondary}
+        color={Colors.secondary}
       />
     </TouchableOpacity>
   );
@@ -93,32 +93,33 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 4,
   },
   menuIconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 16,
   },
   defaultIconBg: {
-    backgroundColor: Colors.accentLight,
+    backgroundColor: '#E8F7F5',
   },
   destructiveIconBg: {
-    backgroundColor: Colors.redBg,
+    backgroundColor: '#FEECEE',
   },
   menuTextContainer: {
     flex: 1,
   },
   menuTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: Colors.textDark,
+    color: '#1E293B',
   },
   destructiveMenuTitle: {
-    color: Colors.logoutRed,
+    color: '#EF4444',
   },
   menuSubtitle: {
     fontSize: 12,

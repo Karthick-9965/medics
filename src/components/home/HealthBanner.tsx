@@ -9,7 +9,9 @@ export default function HealthBanner() {
     <View style={styles.wrapper}>
       <View style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.title}>Early protection for{'\n'}your family health</Text>
+          <Text style={styles.title}>
+            Early protection for{"\n"}your family health
+          </Text>
           <TouchableOpacity style={styles.button} activeOpacity={0.8}>
             <Text style={styles.buttonText}>Learn more</Text>
           </TouchableOpacity>

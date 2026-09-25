@@ -1,31 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Image,
-} from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
-import SuccessModal from '../components/SuccessModal';
+import InputField from '../components/ui/InputField';
+import Button from '../components/ui/Button';
+import SuccessModal from '../components/modals/SuccessModal';
 import { validateEmail, isEmailValidFormat } from '../utils/validation';
 import { getUserByEmail, saveLoginSession } from '../utils/storage';
 
 interface LoginProps {
-  onBack: () => void;
-  onLoginSuccess: (name: string, email?: string) => void;
-  onSignUpLink: () => void;
-  onForgotPassword: () => void;
+  onBack?: () => void;
+  onLoginSuccess?: (name: string, email?: string) => void;
+  onSignUpLink?: () => void;
+  onForgotPassword?: () => void;
   initialEmail?: string;
   initialPassword?: string;
+  navigation?: any;
+  route?: any;
 }
 
 export default function Login({
@@ -35,9 +28,14 @@ export default function Login({
   onForgotPassword,
   initialEmail = '',
   initialPassword = '',
+  navigation,
+  route,
 }: LoginProps) {
-  const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState(initialPassword);
+  const paramEmail = route?.params?.email || initialEmail;
+  const paramPassword = route?.params?.password || initialPassword;
+
+  const [email, setEmail] = useState(paramEmail);
+  const [password, setPassword] = useState(paramPassword);
   const [emailError, setEmailError] = useState('');
   const [isWrongPassword, setIsWrongPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -45,11 +43,10 @@ export default function Login({
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
-    if (initialEmail) setEmail(initialEmail);
-    if (initialPassword) setPassword(initialPassword);
-  }, [initialEmail, initialPassword]);
+    if (route?.params?.email) setEmail(route.params.email);
+    if (route?.params?.password) setPassword(route.params.password);
+  }, [route?.params]);
 
-  // Real-time email validation format check (for checkmark indicator)
   const isValidEmail = isEmailValidFormat(email);
 
   const handleLogin = async () => {
@@ -88,7 +85,7 @@ export default function Login({
     setLoggedInUser({ name: user.name, email: user.email });
 
     // Save session
-    await saveLoginSession(user);
+    await saveLoginSession(user.name, user.email);
 
     // Show Success Modal
     setShowSuccessModal(true);
@@ -96,19 +93,25 @@ export default function Login({
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    if (loggedInUser) {
+    if (onLoginSuccess && loggedInUser) {
       onLoginSuccess(loggedInUser.name, loggedInUser.email);
-    } else {
+    } else if (onLoginSuccess) {
       const displayName = email.split('@')[0];
       onLoginSuccess(displayName.charAt(0).toUpperCase() + displayName.slice(1), email);
+    } else {
+      navigation?.replace('Main');
     }
   };
+
+  const handleGoBack = () => (onBack ? onBack() : navigation?.goBack());
+  const handleGoSignUp = () => (onSignUpLink ? onSignUpLink() : navigation?.navigate('SignUp'));
+  const handleGoForgotPassword = () => (onForgotPassword ? onForgotPassword() : navigation?.navigate('ForgotPassword'));
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Login</Text>
@@ -124,7 +127,7 @@ export default function Login({
           <View style={styles.formSection}>
             {/* Email Input */}
             <InputField
-              icon="mail"
+              icon="mail-outline"
               placeholder="Enter your email"
               value={email}
               onChangeText={(text) => {
@@ -139,7 +142,7 @@ export default function Login({
 
             {/* Password Input */}
             <InputField
-              icon="lock"
+              icon="lock-closed-outline"
               placeholder="Enter your password"
               value={password}
               onChangeText={(text) => {
@@ -155,12 +158,12 @@ export default function Login({
             {isWrongPassword ? (
               <View style={styles.errorRow}>
                 <Text style={styles.errorText}>{ErrorMessages.password.wrong}</Text>
-                <TouchableOpacity onPress={onForgotPassword}>
+                <TouchableOpacity onPress={handleGoForgotPassword}>
                   <Text style={styles.errorForgotLink}>Forgot Password?</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>
+              <TouchableOpacity style={styles.forgotPassword} onPress={handleGoForgotPassword}>
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             )}
@@ -177,7 +180,7 @@ export default function Login({
           {/* Footer Link */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={onSignUpLink}>
+            <TouchableOpacity onPress={handleGoSignUp}>
               <Text style={styles.footerLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -191,7 +194,7 @@ export default function Login({
 
           {/* Social Sign-in Buttons */}
           <View style={styles.socialButtonsSection}>
-            <TouchableOpacity style={styles.socialButton} onPress={() => onLoginSuccess('Google User')}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
               <Image
                 source={require('../assets/google_icon.png')}
                 style={styles.socialImage}
@@ -200,13 +203,13 @@ export default function Login({
               <Text style={styles.socialButtonText}>Sign in with Google</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton} onPress={() => onLoginSuccess('Apple User')}>
-              <FontAwesome name="apple" size={20} color={Colors.black} style={styles.socialIcon} />
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
+              <Ionicons name="logo-apple" size={20} color={Colors.black} style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Sign in with Apple</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton} onPress={() => onLoginSuccess('Facebook User')}>
-              <FontAwesome name="facebook" size={20} color="#4267B2" style={styles.socialIcon} />
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
+              <Ionicons name="logo-facebook" size={20} color="#4267B2" style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Sign in with Facebook</Text>
             </TouchableOpacity>
           </View>
@@ -314,11 +317,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.dividerLine,
+    backgroundColor: Colors.dividerLine || '#E5E7EB',
   },
   dividerText: {
     marginHorizontal: 12,
-    color: Colors.inputIcon,
+    color: Colors.inputIcon || '#9CA3AF',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -345,7 +348,7 @@ const styles = StyleSheet.create({
   },
   socialButtonText: {
     fontSize: 15,
-    color: Colors.socialText,
+    color: Colors.socialText || '#1F2937',
     fontWeight: '600',
   },
 });

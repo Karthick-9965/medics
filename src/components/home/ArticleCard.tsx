@@ -8,6 +8,7 @@ export interface ArticleCardProps {
   image: any;
   date: string;
   readTime: string;
+  onPress?: () => void;
 }
 
 export default function ArticleCard({
@@ -15,9 +16,10 @@ export default function ArticleCard({
   image,
   date,
   readTime,
+  onPress,
 }: ArticleCardProps) {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={styles.imageContainer}>
         <Image source={image} style={styles.thumbnail} resizeMode="cover" />
         <TouchableOpacity style={styles.bookmarkButton} activeOpacity={0.7}>
@@ -38,18 +40,24 @@ export default function ArticleCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: 130,
+    width: 140,
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
     marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
   imageContainer: {
     width: '100%',
-    height: 80,
+    height: 72,
     position: 'relative',
+    backgroundColor: Colors.bgLight,
   },
   thumbnail: {
     width: '100%',
@@ -71,18 +79,18 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   content: {
-    padding: 8,
+    padding: 10,
   },
   title: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: Colors.black,
-    lineHeight: 14,
+    lineHeight: 15,
     marginBottom: 6,
-    minHeight: 28,
+    minHeight: 30,
   },
   meta: {
-    fontSize: 8.5,
+    fontSize: 9,
     color: Colors.secondary,
   },
 });

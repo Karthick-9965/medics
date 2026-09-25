@@ -22,29 +22,41 @@ export function useAppNotification(): AppNotificationHook {
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    // 1. Register device & fetch Expo Push Token
-    registerForPushNotificationsAsync().then((token) => {
-      if (token) {
-        setExpoPushToken(token);
+    try {
+      // 1. Register device & fetch Expo Push Token
+      if (typeof registerForPushNotificationsAsync === 'function') {
+        registerForPushNotificationsAsync().then((token) => {
+          if (token) {
+            setExpoPushToken(token);
+          }
+        }).catch((err) => console.log('Token error:', err));
       }
-    });
 
-    // 2. Listener for when a notification is received while the app is foregrounded
-    notificationListener.current = Notifications.addNotificationReceivedListener((received) => {
-      console.log(' Notification Received Foreground:', received.request.content);
-      setNotification(received);
-    });
+      // 2. Listener for foreground notifications
+      if (Notifications && typeof Notifications.addNotificationReceivedListener === 'function') {
+        notificationListener.current = Notifications.addNotificationReceivedListener((received) => {
+          setNotification(received);
+        });
+      }
 
-    // 3. Listener for when a user interacts with / taps on a notification
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log(' User Clicked Notification:', response.notification.request.content);
-      setResponseNotification(response);
-    });
+      // 3. Listener for notification interaction
+      if (Notifications && typeof Notifications.addNotificationResponseReceivedListener === 'function') {
+        responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+          setResponseNotification(response);
+        });
+      }
+    } catch (e) {
+      console.log('Push notification hook init error (safely ignored):', e);
+    }
 
     // Cleanup listeners 
     return () => {
-      notificationListener.current?.remove();
-      responseListener.current?.remove();
+      try {
+        notificationListener.current?.remove();
+        responseListener.current?.remove();
+      } catch (e) {
+        // Safe ignore
+      }
     };
   }, []);
 

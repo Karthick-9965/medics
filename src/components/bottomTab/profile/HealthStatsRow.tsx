@@ -4,51 +4,53 @@ import {
   View,
   Text,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 
 interface HealthStatsRowProps {
   heartRate?: string;
   calories?: string;
   weight?: string;
+  isTealTheme?: boolean;
 }
 
 export default function HealthStatsRow({
   heartRate = '215bpm',
-  calories = '756cal',
+  calories = '758cal',
   weight = '103lbs',
+  isTealTheme = false,
 }: HealthStatsRowProps) {
   return (
-    <View style={styles.statsContainer}>
-      {/* 1. Heart Rate (Heart Pulse) */}
+    <View style={[styles.statsContainer, isTealTheme && styles.statsContainerTeal]}>
+      {/* 1. Heart Rate */}
       <View style={styles.statBox}>
-        <View style={[styles.statIconCircle, { backgroundColor: '#FFF0F2' }]}>
-          <MaterialCommunityIcons name="heart-pulse" size={20} color="#FF5252" />
+        <View style={styles.iconWrap}>
+          <Ionicons name="heart" size={20} color={isTealTheme ? Colors.white : Colors.logoutRed} />
         </View>
-        <Text style={styles.statValue}>{heartRate}</Text>
-        <Text style={styles.statLabel}>Heart rate</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Heart rate</Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{heartRate}</Text>
       </View>
 
-      <View style={styles.statDivider} />
+      <View style={[styles.statDivider, isTealTheme ? styles.statDividerTeal : styles.statDividerLight]} />
 
-      {/* 2. Calories (Fire / Flame) */}
+      {/* 2. Calories */}
       <View style={styles.statBox}>
-        <View style={[styles.statIconCircle, { backgroundColor: '#FFF7E6' }]}>
-          <MaterialCommunityIcons name="fire" size={20} color="#FF9800" />
+        <View style={styles.iconWrap}>
+          <Ionicons name="flame" size={20} color={isTealTheme ? Colors.white : '#FF9800'} />
         </View>
-        <Text style={styles.statValue}>{calories}</Text>
-        <Text style={styles.statLabel}>Calories</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Calories</Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{calories}</Text>
       </View>
 
-      <View style={styles.statDivider} />
+      <View style={[styles.statDivider, isTealTheme ? styles.statDividerTeal : styles.statDividerLight]} />
 
-      {/* 3. Weight (Weight Scale Machine) */}
+      {/* 3. Weight */}
       <View style={styles.statBox}>
-        <View style={[styles.statIconCircle, { backgroundColor: '#E7F5F2' }]}>
-          <MaterialCommunityIcons name="scale-bathroom" size={19} color={Colors.primary} />
+        <View style={styles.iconWrap}>
+          <FontAwesome5 name="weight" size={18} color={isTealTheme ? Colors.white : Colors.primary} />
         </View>
-        <Text style={styles.statValue}>{weight}</Text>
-        <Text style={styles.statLabel}>Weight</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Weight</Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{weight}</Text>
       </View>
     </View>
   );
@@ -59,39 +61,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: Colors.bgLight,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 16,
-    paddingVertical: 14,
-    marginBottom: 24,
+    paddingVertical: 12,
+    width: '100%',
+    marginBottom: 16,
+  },
+  statsContainerTeal: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingHorizontal: 10,
+    marginTop: 10,
+    marginBottom: 6,
   },
   statBox: {
     alignItems: 'center',
     flex: 1,
   },
-  statIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
+  iconWrap: {
+    marginBottom: 4,
+    height: 24,
     justifyContent: 'center',
-    marginBottom: 6,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  statLabelLight: {
+    color: Colors.secondary,
+  },
+  statLabelTeal: {
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   statValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.textDark,
-    marginBottom: 2,
   },
-  statLabel: {
-    fontSize: 11,
-    color: Colors.secondary,
-    fontWeight: '500',
+  statValueLight: {
+    color: Colors.textDark,
+  },
+  statValueTeal: {
+    color: Colors.white,
   },
   statDivider: {
     width: 1,
-    height: 36,
+    height: 34,
+  },
+  statDividerLight: {
     backgroundColor: Colors.border,
+  },
+  statDividerTeal: {
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
 });

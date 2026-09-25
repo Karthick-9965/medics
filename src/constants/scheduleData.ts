@@ -1,4 +1,20 @@
 import { AppointmentItem } from '../components/bottomTab/schedule/AppointmentCard';
+import { DOCTORS_DATA } from './doctorsData';
+
+export const DOCTOR_AVATARS: Record<string, any> = {
+  'Dr. Marcus Horizon': require('../assets/images/home/doctors/marcus-horizon.png'),
+  'Dr. Maria Elena': require('../assets/images/home/doctors/maria-elena.png'),
+  'Dr. Stefi Jessi': require('../assets/images/home/doctors/stefi-jessi.png'),
+  'Dr. Gerty Cori': require('../assets/images/home/doctors/doctor-gerty.png'),
+  'Dr. Diandra': require('../assets/images/home/doctors/doctor-diandra.png'),
+};
+
+export const getDoctorAvatar = (doctorName: string, fallback?: any) => {
+  if (DOCTOR_AVATARS[doctorName]) return DOCTOR_AVATARS[doctorName];
+  const doc = DOCTORS_DATA.find((d) => d.name.toLowerCase() === doctorName.toLowerCase());
+  if (doc && doc.image) return doc.image;
+  return fallback || DOCTOR_AVATARS['Dr. Marcus Horizon'];
+};
 
 export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
   {
@@ -94,7 +110,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     date: '02/04/2026',
     time: '09:00 AM',
     status: 'canceled',
-    statusLabel: 'Canceled by user',
+    statusLabel: 'Canceled',
     hospitalName: 'Dental Care Clinic',
     consultationType: 'Hospital Visit',
     bookingId: '#MED-58925',
@@ -102,5 +118,6 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     patientAge: '28 yrs',
     patientGender: 'Male',
     fee: '$35.00',
+    cancelReason: 'Appointment canceled due to change in schedule.',
   },
 ];

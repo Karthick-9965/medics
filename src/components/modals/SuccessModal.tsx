@@ -1,15 +1,17 @@
 import React from 'react';
 import { StyleSheet, View, Text, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/Colors';
-import Button from './Button';
+import { Colors } from '../../constants/Colors';
+import Button from '../ui/Button';
 
-interface SuccessModalProps {
+export interface SuccessModalProps {
   visible: boolean;
   title: string;
   subtitle: string;
-  buttonTitle: string;
-  onPressButton: () => void;
+  buttonTitle?: string;
+  buttonText?: string;
+  onPressButton?: () => void;
+  onButtonPress?: () => void;
 }
 
 export default function SuccessModal({
@@ -17,8 +19,13 @@ export default function SuccessModal({
   title,
   subtitle,
   buttonTitle,
+  buttonText,
   onPressButton,
+  onButtonPress,
 }: SuccessModalProps) {
+  const btnLabel = buttonTitle || buttonText || 'Continue';
+  const handlePress = onPressButton || onButtonPress || (() => {});
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -28,7 +35,7 @@ export default function SuccessModal({
           </View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
-          <Button title={buttonTitle} onPress={onPressButton} />
+          <Button title={btnLabel} onPress={handlePress} />
         </View>
       </View>
     </Modal>
@@ -38,45 +45,39 @@ export default function SuccessModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 59, 50, 0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    padding: 24,
   },
   card: {
     width: '100%',
     backgroundColor: Colors.white,
     borderRadius: 24,
-    padding: 30,
+    padding: 24,
     alignItems: 'center',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: Colors.accentLight,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
     color: Colors.textDark,
-    marginBottom: 10,
     textAlign: 'center',
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.secondary,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-    paddingHorizontal: 10,
+    marginBottom: 20,
+    lineHeight: 18,
   },
 });

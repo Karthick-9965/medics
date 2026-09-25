@@ -1,201 +1,79 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Alert,
-} from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../constants/Colors';
-import Button from '../Button';
+import ModalHeader from '../common/ModalHeader';
 
-interface HomeProfileModalProps {
+export interface HomeProfileModalProps {
   visible: boolean;
-  userName: string;
-  userEmail: string;
-  avatarUri: string | null;
-  onAvatarPicked: (uri: string | null) => void;
-  onViewFullProfile: () => void;
-  onLogoutPress: () => void;
   onClose: () => void;
+  userName?: string;
+  userEmail?: string;
+  avatarUri?: string | null;
+  onAvatarPicked?: (uri: string | null) => Promise<void>;
+  onViewFullProfile?: () => void;
+  onNavigateToProfile?: () => void;
+  onLogoutPress?: () => void;
+  onLogout?: () => void;
 }
 
 export default function HomeProfileModal({
   visible,
-  userName,
-  userEmail,
-  avatarUri,
-  onAvatarPicked,
-  onViewFullProfile,
-  onLogoutPress,
   onClose,
+  userName = 'Sathish Kumar',
+  userEmail = 'sathish.kumar@telemed.com',
+  avatarUri,
+  onViewFullProfile,
+  onNavigateToProfile,
+  onLogoutPress,
+  onLogout,
 }: HomeProfileModalProps) {
-  const handlePickFromGallery = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permission Required',
-          'Please allow access to your photo gallery to select a profile picture.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        onAvatarPicked(result.assets[0].uri);
-      }
-    } catch (e) {
-      console.error('Error picking image from gallery', e);
-      Alert.alert('Error', 'Failed to pick image from gallery. Please try again.');
-    }
+  const handleProfileNav = () => {
+    onClose();
+    if (onViewFullProfile) onViewFullProfile();
+    else if (onNavigateToProfile) onNavigateToProfile();
   };
 
-  const handleTakePhoto = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert(
-          'Permission Required',
-          'Please allow camera access to take a profile picture.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        onAvatarPicked(result.assets[0].uri);
-      }
-    } catch (e) {
-      console.error('Error taking photo', e);
-      Alert.alert('Error', 'Failed to capture photo. Please try again.');
-    }
+  const handleSignOut = () => {
+    if (onLogoutPress) onLogoutPress();
+    else if (onLogout) onLogout();
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.sheetContainer}>
-          {/* Header Row */}
-          <View style={styles.headerRow}>
-            <Text style={styles.sheetTitle}>Account Profile</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={22} color={Colors.textDark} />
+        <View style={styles.modalCard}>
+          <ModalHeader title="Quick Account" onClose={onClose} />
+
+          <View style={styles.content}>
+            <View style={styles.userRow}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={32} color={Colors.primary} />
+                </View>
+              )}
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.userName}>{userName}</Text>
+                <Text style={styles.userEmail}>{userEmail}</Text>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>Verified Patient</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.menuItem} onPress={handleProfileNav} activeOpacity={0.7}>
+              <Ionicons name="person-circle-outline" size={22} color={Colors.primary} />
+              <Text style={styles.menuText}>Go to Full Profile & Health Stats</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.secondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleSignOut} activeOpacity={0.7}>
+              <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+              <Text style={styles.logoutText}>Sign Out of Telemedicine</Text>
             </TouchableOpacity>
           </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Active User Avatar & Info */}
-            <View style={styles.userInfoSection}>
-              <View style={styles.avatarWrapper}>
-                {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.mainAvatarImage} />
-                ) : (
-                  <View style={styles.mainAvatarCircle}>
-                    <Ionicons name="person" size={44} color={Colors.primary} />
-                  </View>
-                )}
-                <TouchableOpacity
-                  style={styles.cameraBadge}
-                  onPress={handlePickFromGallery}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="camera" size={16} color={Colors.white} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.userNameText}>{userName || 'User'}</Text>
-
-              <View style={styles.emailRow}>
-                <Ionicons name="mail-outline" size={15} color={Colors.secondary} />
-                <Text style={styles.userEmailText}>{userEmail || 'user@example.com'}</Text>
-              </View>
-
-              <View style={styles.statusBadge}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Active Account</Text>
-              </View>
-            </View>
-
-            {/* Gallery / Photo Upload Options */}
-            <View style={styles.photoActionsBox}>
-              <Text style={styles.sectionLabel}>Profile Photo</Text>
-              
-              <View style={styles.photoButtonsRow}>
-                <TouchableOpacity
-                  style={styles.photoOptionButton}
-                  onPress={handlePickFromGallery}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.photoIconCircle, { backgroundColor: Colors.accentLight }]}>
-                    <Ionicons name="images" size={22} color={Colors.primary} />
-                  </View>
-                  <Text style={styles.photoOptionTitle}>Choose from Gallery</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.photoOptionButton}
-                  onPress={handleTakePhoto}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.photoIconCircle, { backgroundColor: '#EBF3FF' }]}>
-                    <Ionicons name="camera" size={22} color="#2F80ED" />
-                  </View>
-                  <Text style={styles.photoOptionTitle}>Take Photo</Text>
-                </TouchableOpacity>
-              </View>
-
-              {avatarUri && (
-                <TouchableOpacity
-                  style={styles.removePhotoButton}
-                  onPress={() => onAvatarPicked(null)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="trash-outline" size={16} color={Colors.error} />
-                  <Text style={styles.removePhotoText}>Remove Photo</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.actionsContainer}>
-              <Button
-                title="View Full Profile"
-                onPress={() => {
-                  onClose();
-                  onViewFullProfile();
-                }}
-              />
-
-              <TouchableOpacity
-                style={styles.logoutButton}
-                onPress={() => {
-                  onClose();
-                  onLogoutPress();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="log-out-outline" size={20} color={Colors.logoutRed} />
-                <Text style={styles.logoutButtonText}>Log Out</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -205,190 +83,90 @@ export default function HomeProfileModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 59, 50, 0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
-  sheetContainer: {
+  modalCard: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 34,
-    maxHeight: '88%',
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 20,
   },
-  headerRow: {
+  content: {
+    padding: 16,
+  },
+  userRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: Colors.bgLight,
     marginBottom: 16,
   },
-  sheetTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  avatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '700',
     color: Colors.textDark,
   },
-  closeButton: {
-    padding: 6,
-  },
-  scrollContent: {
-    alignItems: 'center',
-    paddingBottom: 10,
-  },
-  userInfoSection: {
-    alignItems: 'center',
-    marginBottom: 18,
-    width: '100%',
-  },
-  avatarWrapper: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  mainAvatarCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: Colors.accentLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: Colors.border,
-  },
-  mainAvatarImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 3,
-    borderColor: Colors.primary,
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: Colors.primary,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2.5,
-    borderColor: Colors.white,
-  },
-  userNameText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.textDark,
-    marginBottom: 4,
-  },
-  emailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  userEmailText: {
-    fontSize: 14,
-    color: Colors.secondary,
-    fontWeight: '500',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    gap: 6,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#34C759',
-  },
-  statusText: {
+  userEmail: {
     fontSize: 12,
+    color: Colors.secondary,
+    marginTop: 2,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.accentLight,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  badgeText: {
+    fontSize: 10,
     fontWeight: '700',
     color: Colors.primary,
   },
-  photoActionsBox: {
-    width: '100%',
-    backgroundColor: Colors.bgLight,
-    borderRadius: 18,
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    padding: 16,
-    marginBottom: 20,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textDark,
     marginBottom: 12,
   },
-  photoButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  photoOptionButton: {
+  menuText: {
     flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  photoIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoOptionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textDark,
-    textAlign: 'center',
-  },
-  removePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  removePhotoText: {
+    marginLeft: 12,
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.error,
+    color: Colors.textDark,
   },
-  actionsContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  logoutButton: {
+  logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.redBg,
-    borderRadius: 28,
-    paddingVertical: 14,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
     gap: 8,
   },
-  logoutButtonText: {
-    fontSize: 15,
+  logoutText: {
+    color: Colors.error,
     fontWeight: '700',
-    color: Colors.logoutRed,
+    fontSize: 13,
   },
 });

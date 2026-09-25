@@ -6,6 +6,7 @@ import { Colors } from '../../constants/Colors';
 interface HomeHeaderProps {
   userName?: string;
   avatarUri?: string | null;
+  unreadCount?: number;
   onProfilePress?: () => void;
   onNotificationPress?: () => void;
 }
@@ -13,6 +14,7 @@ interface HomeHeaderProps {
 export default function HomeHeader({
   userName = 'User',
   avatarUri = null,
+  unreadCount = 0,
   onProfilePress,
   onNotificationPress,
 }: HomeHeaderProps) {
@@ -41,13 +43,22 @@ export default function HomeHeader({
         <Text style={styles.subtitle}>How are you feeling today?</Text>
       </View>
 
-      {/* Right Notification Bell Icon */}
+      {/* Right Notification Bell Icon with Badge */}
       <TouchableOpacity
         style={styles.notificationButton}
         onPress={onNotificationPress}
         activeOpacity={0.7}
       >
-        <Ionicons name="notifications-outline" size={24} color={Colors.black} />
+        <View style={styles.bellWrapper}>
+          <Ionicons name="notifications-outline" size={24} color={Colors.black} />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -97,5 +108,37 @@ const styles = StyleSheet.create({
   },
   notificationButton: {
     padding: 6,
+  },
+  bellWrapper: {
+    position: 'relative',
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.error,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: Colors.white,
+    shadowColor: Colors.error,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  badgeText: {
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
   },
 });

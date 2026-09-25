@@ -40,13 +40,18 @@ const services: QuickServiceItem[] = [
   },
 ];
 
-export default function QuickServices() {
+interface QuickServicesProps {
+  onServicePress?: (serviceId: string) => void;
+}
+
+export default function QuickServices({ onServicePress }: QuickServicesProps) {
   return (
     <View style={styles.container}>
       {services.map((item) => (
         <TouchableOpacity
           key={item.id}
           style={styles.itemWrapper}
+          onPress={() => onServicePress?.(item.id)}
           activeOpacity={0.8}
         >
           <View style={styles.iconCircle}>

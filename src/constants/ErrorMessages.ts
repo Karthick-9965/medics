@@ -1,4 +1,9 @@
 export const ErrorMessages = {
+  EMAIL_NOT_FOUND: 'No account registered with this email address.',
+  WRONG_PASSWORD: 'The password you entered is incorrect.',
+  EMAIL_ALREADY_EXISTS: 'An account with this email already exists.',
+  OTP_INCOMPLETE: 'Please enter all 4 digits of the code.',
+  PASSWORDS_DO_NOT_MATCH: 'Passwords do not match.',
   email: {
     required: '*Email is required',
     invalid: '*Please enter a valid email address',

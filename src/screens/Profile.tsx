@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,18 +9,40 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import ProfileUserCard from '../components/bottomTab/profile/ProfileUserCard';
 import HealthStatsRow from '../components/bottomTab/profile/HealthStatsRow';
 import ProfileMenuItem from '../components/bottomTab/profile/ProfileMenuItem';
-import LogoutModal from '../components/LogoutModal';
+import LogoutModal from '../components/modals/LogoutModal';
 import ProfilePhotoModal from '../components/bottomTab/profile/ProfilePhotoModal';
+import PersonalInfoModal, { UserProfileData } from '../components/bottomTab/profile/PersonalInfoModal';
+import { getLoginSession } from '../utils/storage';
 
-interface ProfileProps {
+const INITIAL_PROFILE: UserProfileData = {
+  name: 'Sathish Kumar',
+  email: 'sathish.kumar@telemed.com',
+  phone: '+1 (555) 019-2834',
+  dob: '14 May 1996',
+  age: '28',
+  gender: 'Male',
+  bloodGroup: 'O+',
+  height: '178 cm',
+  weight: '75 kg',
+  heartRate: '215bpm',
+  calories: '756cal',
+  emergencyContactName: 'Priya Kumar (Spouse)',
+  emergencyContactPhone: '+1 (555) 019-5678',
+  address: '742 Evergreen Terrace, Medical District',
+  allergies: 'Penicillin, Peanuts',
+};
+
+export interface ProfileProps {
   userName?: string;
   userEmail?: string;
   avatarUri?: string | null;
-  onAvatarChange?: (uri: string | null) => void;
+  onAvatarPicked?: (uri: string | null) => void;
+  onAvatarChange?: (uri: string | null) => Promise<void> | void;
   onLogout?: () => void;
   onNavigateToSchedule?: () => void;
   onNavigateToSavedDoctors?: () => void;
@@ -29,7 +51,8 @@ interface ProfileProps {
 export default function Profile({
   userName,
   userEmail,
-  avatarUri = null,
+  avatarUri: propAvatar = null,
+  onAvatarPicked,
   onAvatarChange,
   onLogout,
   onNavigateToSchedule,
@@ -38,12 +61,59 @@ export default function Profile({
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showPersonalInfoModal, setShowPersonalInfoModal] = useState(false);
 
-  const displayName = userName || 'User';
-  const displayEmail = userEmail || `${displayName.toLowerCase().replace(/\s+/g, '')}@example.com`;
+  const [avatarUri, setAvatarUri] = useState<string | null>(propAvatar || null);
+  const [profileData, setProfileData] = useState<UserProfileData>({
+    ...INITIAL_PROFILE,
+    name: userName || INITIAL_PROFILE.name,
+    email: userEmail || INITIAL_PROFILE.email,
+  });
 
-  const handleLogoutPress = () => {
-    setShowLogoutModal(true);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const session = await getLoginSession();
+        const activeName = userName || session?.name;
+        const activeEmail = userEmail || session?.email;
+
+        const stored = await AsyncStorage.getItem('@user_profile_data');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setProfileData({
+            ...parsed,
+            name: activeName || parsed.name || 'User',
+            email: activeEmail || parsed.email || 'user@telemed.com',
+          });
+        } else {
+          setProfileData((prev) => ({
+            ...prev,
+            name: activeName || prev.name,
+            email: activeEmail || prev.email,
+          }));
+        }
+        const av = await AsyncStorage.getItem('@user_avatar');
+        if (av) setAvatarUri(av);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    load();
+  }, [userName, userEmail]);
+
+  const displayName = profileData.name || userName || 'User';
+  const displayEmail = profileData.email || userEmail || `${displayName.toLowerCase().replace(/\s+/g, '')}@example.com`;
+
+  const handleAvatarChange = async (uri: string | null) => {
+    setAvatarUri(uri);
+    try {
+      if (uri) await AsyncStorage.setItem('@user_avatar', uri);
+      else await AsyncStorage.removeItem('@user_avatar');
+    } catch (e) {
+      console.log(e);
+    }
+    if (onAvatarPicked) onAvatarPicked(uri);
+    if (onAvatarChange) onAvatarChange(uri);
   };
 
   return (
@@ -56,7 +126,11 @@ export default function Profile({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Profile</Text>
-          <TouchableOpacity style={styles.headerIconButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.headerIconButton}
+            onPress={() => setShowPersonalInfoModal(true)}
+            activeOpacity={0.7}
+          >
             <Ionicons name="settings-outline" size={22} color={Colors.textDark} />
           </TouchableOpacity>
         </View>
@@ -71,15 +145,22 @@ export default function Profile({
 
         {/* Health Stats Row */}
         <HealthStatsRow
-          heartRate="215bpm"
-          calories="756cal"
-          weight="103lbs"
+          heartRate={profileData.heartRate}
+          calories={profileData.calories}
+          weight={profileData.weight}
         />
 
         {/* Menu Section 1: Medical & Appointments */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionHeaderTitle}>Medical Records</Text>
           <View style={styles.menuCard}>
+            <ProfileMenuItem
+              icon="person-outline"
+              title="Personal Information"
+              subtitle="Edit health details & contacts"
+              onPress={() => setShowPersonalInfoModal(true)}
+            />
+            <View style={styles.itemDivider} />
             <ProfileMenuItem
               icon="heart-outline"
               title="My Saved Doctors"
@@ -97,7 +178,7 @@ export default function Profile({
               icon="card-outline"
               title="Payment Method"
               subtitle="Visa ending in 4242"
-              onPress={() => Alert.alert('Payment', 'Payment method options')}
+              onPress={() => Alert.alert('Payment Method', 'UPI & Visa Card ending in 4242 are verified.')}
             />
           </View>
         </View>
@@ -116,13 +197,13 @@ export default function Profile({
             <ProfileMenuItem
               icon="shield-checkmark-outline"
               title="Privacy & Security"
-              onPress={() => Alert.alert('Privacy', 'Privacy & Security details')}
+              onPress={() => Alert.alert('Privacy & Security', 'End-to-end 256-bit encrypted medical consultations.')}
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
               icon="help-circle-outline"
               title="Help Center & FAQs"
-              onPress={() => Alert.alert('Help Center', 'Our 24/7 support is ready to help.')}
+              onPress={() => Alert.alert('Help Center', 'Our 24/7 patient support is ready to help at support@telemed.com')}
             />
           </View>
         </View>
@@ -134,7 +215,7 @@ export default function Profile({
               icon="log-out-outline"
               title="Log Out"
               isDestructive
-              onPress={handleLogoutPress}
+              onPress={() => setShowLogoutModal(true)}
             />
           </View>
         </View>
@@ -143,9 +224,9 @@ export default function Profile({
       {/* Custom Logout Popup Modal */}
       <LogoutModal
         visible={showLogoutModal}
-        onConfirmLogout={() => {
+        onConfirm={() => {
           setShowLogoutModal(false);
-          onLogout?.();
+          if (onLogout) onLogout();
         }}
         onCancel={() => setShowLogoutModal(false)}
       />
@@ -156,10 +237,19 @@ export default function Profile({
         avatarUri={avatarUri}
         userName={displayName}
         userEmail={displayEmail}
-        onAvatarPicked={(uri) => {
-          onAvatarChange?.(uri);
-        }}
+        onAvatarPicked={handleAvatarChange}
         onClose={() => setShowPhotoModal(false)}
+      />
+
+      {/* Personal Info Edit Modal */}
+      <PersonalInfoModal
+        visible={showPersonalInfoModal}
+        initialData={profileData}
+        onClose={() => setShowPersonalInfoModal(false)}
+        onSave={(data) => {
+          setProfileData(data);
+          AsyncStorage.setItem('@user_profile_data', JSON.stringify(data));
+        }}
       />
     </SafeAreaView>
   );

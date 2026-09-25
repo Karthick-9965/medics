@@ -1,359 +1,299 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  Image,
-  TextInput,
-} from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, TextInput, Modal, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import { DOCTORS_DATA, DoctorItem } from '../constants/doctorsData';
+import { PHARMACIES_DATA, PharmacyItem } from '../constants/pharmaciesData';
+import { HOSPITALS_DATA, HospitalItem } from '../constants/hospitalsData';
+import { ARTICLES_DATA, ArticleItem } from '../constants/articlesData';
+import ModalHeader from '../components/common/ModalHeader';
+import BookDoctorModal from '../components/home/BookDoctorModal';
+import PharmacyOrderModal from '../components/home/PharmacyOrderModal';
+import HospitalDirectionsModal from '../components/home/HospitalDirectionsModal';
 
 export type SeeAllCategory = 'doctor' | 'article' | 'pharmacy' | 'hospital';
 
 interface SeeAllScreenProps {
-  category: SeeAllCategory;
-  onBack: () => void;
+  category?: SeeAllCategory;
+  initialQuery?: string;
+  onBack?: () => void;
+  onSelectDoctor?: (doctor: DoctorItem) => void;
+  onEmergencyPress?: () => void;
+  onNavigateToSchedule?: () => void;
+  navigation?: any;
+  route?: any;
 }
 
-// 1. Doctors List Data (Unique Photos for each doctor)
-const doctorsData = [
-  {
-    id: '1',
-    name: 'Dr. Marcus Horizon',
-    specialization: 'Cardiologist',
-    image: require('../assets/images/home/doctors/marcus-horizon.png'),
-    rating: '4.7',
-    reviews: '150 Reviews',
-    distance: '800m away',
-    availableTime: '10:00 AM - 4:00 PM',
-  },
-  {
-    id: '2',
-    name: 'Dr. Maria Elena',
-    specialization: 'Psychologist',
-    image: require('../assets/images/home/doctors/maria-elena.png'),
-    rating: '4.9',
-    reviews: '210 Reviews',
-    distance: '1.5km away',
-    availableTime: '11:00 AM - 6:00 PM',
-  },
-  {
-    id: '3',
-    name: 'Dr. Stefi Jessi',
-    specialization: 'Orthopedist',
-    image: require('../assets/images/home/doctors/stefi-jessi.png'),
-    rating: '4.8',
-    reviews: '180 Reviews',
-    distance: '2km away',
-    availableTime: '09:00 AM - 3:00 PM',
-  },
-  {
-    id: '4',
-    name: 'Dr. Gerty Cori',
-    specialization: 'Pediatrician',
-    image: require('../assets/images/home/doctors/doctor-gerty.png'),
-    rating: '4.6',
-    reviews: '95 Reviews',
-    distance: '2.8km away',
-    availableTime: '10:00 AM - 2:00 PM',
-  },
-  {
-    id: '5',
-    name: 'Dr. Diandra Paramitha',
-    specialization: 'Dentist',
-    image: require('../assets/images/home/doctors/doctor-diandra.png'),
-    rating: '4.9',
-    reviews: '320 Reviews',
-    distance: '3.1km away',
-    availableTime: '01:00 PM - 8:00 PM',
-  },
-];
+export default function SeeAllScreen({
+  category: propCat,
+  initialQuery,
+  onBack,
+  onSelectDoctor,
+  onEmergencyPress,
+  onNavigateToSchedule,
+  navigation,
+  route,
+}: SeeAllScreenProps) {
+  const category: SeeAllCategory = propCat || route?.params?.category || 'doctor';
 
-// 2. Health Articles List Data (Unique Photos for each article)
-const articlesData = [
-  {
-    id: '1',
-    title: 'The 25 Healthiest Fruits You Can Eat',
-    image: require('../assets/images/home/articles/healthy-fruits.png'),
-    date: 'Jun 10, 2026',
-    readTime: '5 min read',
-    category: 'Nutrition',
-  },
-  {
-    id: '2',
-    title: '10 Tips To Improve Your Immune System',
-    image: require('../assets/images/home/articles/immune-system.png'),
-    date: 'Jun 8, 2026',
-    readTime: '4 min read',
-    category: 'Wellness',
-  },
-  {
-    id: '3',
-    title: 'How To Manage Stress Naturally',
-    image: require('../assets/images/home/articles/stress-management.png'),
-    date: 'Jun 5, 2026',
-    readTime: '6 min read',
-    category: 'Mental Health',
-  },
-  {
-    id: '4',
-    title: 'The Importance of Regular Health Checkups',
-    image: require('../assets/images/home/articles/checkup.png'),
-    date: 'Jun 1, 2026',
-    readTime: '5 min read',
-    category: 'Prevention',
-  },
-  {
-    id: '5',
-    title: 'Superfoods to Boost Brain Function & Memory',
-    image: require('../assets/images/home/articles/brain-health.png'),
-    date: 'May 28, 2026',
-    readTime: '7 min read',
-    category: 'Brain Health',
-  },
-];
+  const handleGoBack = () => (onBack ? onBack() : navigation?.goBack());
+  const handleEmergency = () => (onEmergencyPress ? onEmergencyPress() : navigation?.navigate('Ambulance'));
 
-// 3. Pharmacy List Data (Unique Photos for each pharmacy)
-const pharmaciesData = [
-  {
-    id: '1',
-    name: 'HealthPlus Pharmacy',
-    image: require('../assets/images/home/pharmacies/healthplus.png'),
-    rating: '4.6',
-    distance: '800m away',
-    status: 'Open 24 Hours',
-  },
-  {
-    id: '2',
-    name: 'WellCare Pharmacy',
-    image: require('../assets/images/home/pharmacies/wellcare.png'),
-    rating: '4.7',
-    distance: '1.2km away',
-    status: 'Open 08:00 AM - 10:00 PM',
-  },
-  {
-    id: '3',
-    name: 'MediLife Pharmacy',
-    image: require('../assets/images/home/pharmacies/medilife.png'),
-    rating: '4.5',
-    distance: '2km away',
-    status: 'Open 24 Hours',
-  },
-  {
-    id: '4',
-    name: 'CarePharma Express',
-    image: require('../assets/images/home/pharmacies/carepharma.png'),
-    rating: '4.8',
-    distance: '2.7km away',
-    status: 'Open 09:00 AM - 11:00 PM',
-  },
-  {
-    id: '5',
-    name: 'Apollo Pharmacy',
-    image: require('../assets/images/home/pharmacies/apollopharmacy.png'),
-    rating: '4.9',
-    distance: '3.2km away',
-    status: 'Open 24 Hours',
-  },
-];
-
-// 4. Hospitals List Data (Unique Photos for each hospital)
-const hospitalsData = [
-  {
-    id: '1',
-    name: 'City Care Hospital',
-    image: require('../assets/images/home/hospitals/city-care.png'),
-    rating: '4.6',
-    distance: '1.2km away',
-    type: 'Emergency & Multi-Specialty',
-  },
-  {
-    id: '2',
-    name: 'Sunrise Hospital',
-    image: require('../assets/images/home/hospitals/sunrise.png'),
-    rating: '4.7',
-    distance: '1.8km away',
-    type: 'General & Cardiology',
-  },
-  {
-    id: '3',
-    name: 'Apollo Hospital',
-    image: require('../assets/images/home/hospitals/apollo.png'),
-    rating: '4.5',
-    distance: '2.5km away',
-    type: 'Super Specialty Hospital',
-  },
-  {
-    id: '4',
-    name: 'Metro Health Medical Center',
-    image: require('../assets/images/home/hospitals/metro-health.png'),
-    rating: '4.8',
-    distance: '3.5km away',
-    type: 'Emergency & Trauma Care',
-  },
-  {
-    id: '5',
-    name: 'Grace Memorial Hospital',
-    image: require('../assets/images/home/hospitals/grace-memorial.png'),
-    rating: '4.6',
-    distance: '4.2km away',
-    type: 'Pediatric & Maternity Care',
-  },
-];
-
-export default function SeeAllScreen({ category, onBack }: SeeAllScreenProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialQuery || route?.params?.query || '');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [bookingDoctor, setBookingDoctor] = useState<DoctorItem | null>(null);
+  const [orderingPharmacy, setOrderingPharmacy] = useState<PharmacyItem | null>(null);
+  const [pharmacyModalMode, setPharmacyModalMode] = useState<'prescription' | 'catalog'>('catalog');
+  const [directionsHospital, setDirectionsHospital] = useState<HospitalItem | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
 
   const getTitle = () => {
     switch (category) {
-      case 'doctor':
-        return 'Top Doctors';
-      case 'article':
-        return 'Health Articles';
-      case 'pharmacy':
-        return 'Pharmacies';
-      case 'hospital':
-        return 'Nearby Hospitals';
-      default:
-        return 'All Items';
+      case 'doctor': return 'Specialists';
+      case 'pharmacy': return 'Nearby Pharmacies';
+      case 'hospital': return 'Nearby Hospitals';
+      case 'article': return 'Health Articles';
     }
   };
 
-  const getSearchPlaceholder = () => {
-    switch (category) {
-      case 'doctor':
-        return 'Search doctors by name or specialty...';
-      case 'article':
-        return 'Search health articles...';
-      case 'pharmacy':
-        return 'Search pharmacies...';
-      case 'hospital':
-        return 'Search nearby hospitals...';
+  const filterOptions =
+    category === 'doctor'
+      ? ['All', 'Psychologist', 'Pediatrician', 'Neurologist', 'Orthopedist', 'Dermatologist', 'Cardiologist', 'General', 'Dentist']
+      : category === 'pharmacy'
+      ? ['All', 'Open 24/7', 'Home Delivery']
+      : category === 'hospital'
+      ? ['All', 'ICU Beds', 'Emergency 24/7']
+      : ['All', 'Cardiology', 'Wellness', 'Nutrition'];
+
+  const getFilteredData = (): any[] => {
+    const q = searchQuery.toLowerCase();
+    if (category === 'doctor') {
+      const list = DOCTORS_DATA.filter((d) => {
+        const matchesQ =
+          d.name.toLowerCase().includes(q) ||
+          d.specialization.toLowerCase().includes(q) ||
+          (d.hospital && d.hospital.toLowerCase().includes(q));
+        const matchesF =
+          activeFilter === 'All' ||
+          d.specialization.toLowerCase().includes(activeFilter.toLowerCase());
+        return matchesQ && matchesF;
+      });
+      return list.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
     }
+    if (category === 'pharmacy') {
+      return PHARMACIES_DATA.filter((p) => {
+        const matchesQ = p.name.toLowerCase().includes(q) || (p.address && p.address.toLowerCase().includes(q));
+        const matchesF = activeFilter === 'All' || (activeFilter === 'Open 24/7' && p.deliveryTime?.includes('24'));
+        return matchesQ && matchesF;
+      });
+    }
+    if (category === 'hospital') {
+      return HOSPITALS_DATA.filter((h) => {
+        const matchesQ = h.name.toLowerCase().includes(q) || (h.address && h.address.toLowerCase().includes(q));
+        const matchesF = activeFilter === 'All' || (activeFilter === 'ICU Beds' && (h.availableBeds || 0) > 0);
+        return matchesQ && matchesF;
+      });
+    }
+    return ARTICLES_DATA.filter((a) => {
+      const matchesQ = a.title.toLowerCase().includes(q) || (a.author && a.author.toLowerCase().includes(q));
+      const matchesF = activeFilter === 'All' || a.category.toLowerCase().includes(activeFilter.toLowerCase());
+      return matchesQ && matchesF;
+    });
   };
 
-  const renderDoctorItem = ({ item }: { item: typeof doctorsData[0] }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.doctorAvatar} />
+  const dataList = getFilteredData();
+
+  const renderDoctorItem = ({ item }: { item: DoctorItem }) => (
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => {
+        if (onSelectDoctor) onSelectDoctor(item);
+        else setBookingDoctor(item);
+      }}
+    >
+      <View style={styles.thumbWrapper}>
+        <Image source={item.image} style={styles.storeThumb} />
+      </View>
       <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardSubtitle}>{item.specialization}</Text>
-
+        <View style={styles.categoryPill}>
+          <Text style={styles.categoryPillText}>{item.specialization}</Text>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          {item.experience || '8+ yrs exp'} • {item.hospital || 'Care Hospital'}
+        </Text>
         <View style={styles.metaRow}>
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={11} color={Colors.primary} />
+            <Ionicons name="star" size={10.5} color={Colors.primary} />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
           <Text style={styles.dotSeparator}>•</Text>
           <View style={styles.distanceBadge}>
-            <Ionicons name="location-sharp" size={11} color={Colors.secondary} />
-            <Text style={styles.distanceText}>{item.distance}</Text>
+            <Ionicons name="location-sharp" size={10.5} color={Colors.secondary} />
+            <Text style={styles.distanceText}>{item.distance || '800m away'}</Text>
           </View>
         </View>
-
-        <View style={styles.timeBadge}>
-          <Feather name="clock" size={11} color={Colors.primary} />
-          <Text style={styles.timeText}>{item.availableTime}</Text>
+        <View style={styles.cardActionRow}>
+          <TouchableOpacity
+            style={styles.actionBtnPrimary}
+            onPress={() => {
+              if (onSelectDoctor) onSelectDoctor(item);
+              else setBookingDoctor(item);
+            }}
+          >
+            <Ionicons name="calendar-outline" size={12} color={Colors.white} />
+            <Text style={styles.actionBtnText}>Book Appointment</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
-  const renderArticleItem = ({ item }: { item: typeof articlesData[0] }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.articleThumb} />
+  const renderArticleItem = ({ item }: { item: ArticleItem }) => (
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => setSelectedArticle(item)}
+    >
+      <View style={styles.thumbWrapper}>
+        <Image source={item.image} style={styles.storeThumb} />
+      </View>
       <View style={styles.cardInfo}>
         <View style={styles.categoryPill}>
           <Text style={styles.categoryPillText}>{item.category}</Text>
         </View>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.metaText}>{item.date} • {item.readTime}</Text>
-      </View>
-    </View>
-  );
-
-  const renderPharmacyItem = ({ item }: { item: typeof pharmaciesData[0] }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.storeThumb} />
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.statusText}>{item.status}</Text>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          By {item.author || 'Medical Team'} • Health Guide
+        </Text>
         <View style={styles.metaRow}>
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={11} color={Colors.primary} />
+            <Ionicons name="time-outline" size={10.5} color={Colors.primary} />
+            <Text style={styles.ratingText}>{item.readTime}</Text>
+          </View>
+          <Text style={styles.dotSeparator}>•</Text>
+          <View style={styles.distanceBadge}>
+            <Ionicons name="calendar-outline" size={10.5} color={Colors.secondary} />
+            <Text style={styles.distanceText}>{item.date}</Text>
+          </View>
+        </View>
+        <View style={styles.cardActionRow}>
+          <TouchableOpacity
+            style={styles.actionBtnPrimary}
+            onPress={() => setSelectedArticle(item)}
+          >
+            <Ionicons name="book-outline" size={12} color={Colors.white} />
+            <Text style={styles.actionBtnText}>Read Full Article</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderPharmacyItem = ({ item }: { item: PharmacyItem }) => (
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => {
+        setOrderingPharmacy(item);
+        setPharmacyModalMode('catalog');
+      }}
+    >
+      <View style={styles.thumbWrapper}>
+        <Image source={item.image} style={styles.storeThumb} />
+      </View>
+      <View style={styles.cardInfo}>
+        <View style={styles.categoryPill}>
+          <Text style={styles.categoryPillText}>Pharmacy & Medicine</Text>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          ⚡ {item.deliveryTime || '15-25 mins'} • Express Delivery
+        </Text>
+        <View style={styles.metaRow}>
+          <View style={styles.ratingBadge}>
+            <Ionicons name="star" size={10.5} color={Colors.primary} />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
           <Text style={styles.dotSeparator}>•</Text>
           <View style={styles.distanceBadge}>
-            <Ionicons name="location-sharp" size={11} color={Colors.secondary} />
-            <Text style={styles.distanceText}>{item.distance}</Text>
+            <Ionicons name="location-sharp" size={10.5} color={Colors.secondary} />
+            <Text style={styles.distanceText}>{item.distance || '1.2 km'}</Text>
           </View>
         </View>
+        <View style={styles.cardActionRow}>
+          <TouchableOpacity
+            style={styles.actionBtnPrimary}
+            onPress={() => {
+              setOrderingPharmacy(item);
+              setPharmacyModalMode('catalog');
+            }}
+          >
+            <Ionicons name="cart" size={12} color={Colors.white} />
+            <Text style={styles.actionBtnText}>Order Medicines</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
-  const renderHospitalItem = ({ item }: { item: typeof hospitalsData[0] }) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.storeThumb} />
+  const renderHospitalItem = ({ item }: { item: HospitalItem }) => (
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => setDirectionsHospital(item)}
+    >
+      <View style={styles.thumbWrapper}>
+        <Image source={item.image} style={styles.storeThumb} />
+        <View style={[styles.storeRxBadge, { backgroundColor: 'rgba(22, 163, 74, 0.92)' }]}>
+          <Ionicons name="bed" size={8.5} color={Colors.white} />
+          <Text style={styles.storeRxBadgeText}>{item.availableBeds || 12} Beds</Text>
+        </View>
+      </View>
       <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardSubtitle}>{item.type}</Text>
+        <View style={styles.categoryPill}>
+          <Text style={styles.categoryPillText}>{item.departments?.[0] || 'Hospital'}</Text>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.cardSubtitle} numberOfLines={1}>
+          🛏️ {item.availableBeds || 12} ICU Beds • {item.visitingHours || '24/7 Open'}
+        </Text>
         <View style={styles.metaRow}>
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={11} color={Colors.primary} />
+            <Ionicons name="star" size={10.5} color={Colors.primary} />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
           <Text style={styles.dotSeparator}>•</Text>
           <View style={styles.distanceBadge}>
-            <Ionicons name="location-sharp" size={11} color={Colors.secondary} />
-            <Text style={styles.distanceText}>{item.distance}</Text>
+            <Ionicons name="location-sharp" size={10.5} color={Colors.secondary} />
+            <Text style={styles.distanceText}>{item.distance || '2.5 km'}</Text>
           </View>
         </View>
+        <View style={styles.cardActionRow}>
+          <TouchableOpacity
+            style={styles.actionBtnPrimary}
+            onPress={() => setDirectionsHospital(item)}
+          >
+            <Ionicons name="calendar" size={12} color={Colors.white} />
+            <Text style={styles.actionBtnText}>Book Visit / Reception</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
-  const getData = () => {
+  const renderItem = ({ item }: any) => {
     switch (category) {
       case 'doctor':
-        return doctorsData.filter((d) =>
-          d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          d.specialization.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return renderDoctorItem({ item });
       case 'article':
-        return articlesData.filter((a) =>
-          a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.category.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return renderArticleItem({ item });
       case 'pharmacy':
-        return pharmaciesData.filter((p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return renderPharmacyItem({ item });
       case 'hospital':
-        return hospitalsData.filter((h) =>
-          h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          h.type.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      default:
-        return [];
-    }
-  };
-
-  const renderItem = (itemProps: any) => {
-    switch (category) {
-      case 'doctor':
-        return renderDoctorItem(itemProps);
-      case 'article':
-        return renderArticleItem(itemProps);
-      case 'pharmacy':
-        return renderPharmacyItem(itemProps);
-      case 'hospital':
-        return renderHospitalItem(itemProps);
+        return renderHospitalItem({ item });
       default:
         return null;
     }
@@ -363,7 +303,7 @@ export default function SeeAllScreen({ category, onBack }: SeeAllScreenProps) {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Top Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{getTitle()}</Text>
@@ -375,25 +315,55 @@ export default function SeeAllScreen({ category, onBack }: SeeAllScreenProps) {
         <Ionicons name="search-outline" size={18} color={Colors.inputPlaceholder} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder={getSearchPlaceholder()}
+          placeholder={`Search ${getTitle().toLowerCase()}...`}
           placeholderTextColor={Colors.inputPlaceholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={styles.clearIconBtn}>
             <Ionicons name="close-circle" size={18} color={Colors.secondary} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Items List */}
+      {/* Filter Category Pills */}
+      <View style={styles.filterScrollWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {filterOptions.map((opt) => {
+            const isSelected = activeFilter === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                onPress={() => setActiveFilter(opt)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                  {opt}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Main List */}
       <FlatList
-        data={getData()}
-        keyExtractor={(item: any) => item.id}
+        data={dataList}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="search" size={48} color={Colors.border} />
@@ -401,6 +371,49 @@ export default function SeeAllScreen({ category, onBack }: SeeAllScreenProps) {
           </View>
         }
       />
+
+      {/* Modals */}
+      <BookDoctorModal
+        visible={!!bookingDoctor}
+        doctor={bookingDoctor}
+        onClose={() => setBookingDoctor(null)}
+        onNavigateToSchedule={() => {
+          setBookingDoctor(null);
+          if (onNavigateToSchedule) onNavigateToSchedule();
+        }}
+      />
+
+      <PharmacyOrderModal
+        visible={!!orderingPharmacy}
+        pharmacy={orderingPharmacy}
+        initialMode={pharmacyModalMode}
+        onClose={() => setOrderingPharmacy(null)}
+      />
+
+      <HospitalDirectionsModal
+        visible={!!directionsHospital}
+        hospital={directionsHospital}
+        onClose={() => setDirectionsHospital(null)}
+        onAmbulancePress={handleEmergency}
+      />
+
+      {/* Article Detail Modal */}
+      <Modal visible={!!selectedArticle} animationType="slide" transparent onRequestClose={() => setSelectedArticle(null)}>
+        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            <ModalHeader title={selectedArticle?.title || 'Article'} onClose={() => setSelectedArticle(null)} />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.articleBody}>
+              {selectedArticle && (
+                <>
+                  <Image source={selectedArticle.image} style={styles.articleImage} />
+                  <Text style={styles.articleMeta}>{selectedArticle.category} • {selectedArticle.date} • {selectedArticle.readTime}</Text>
+                  <Text style={styles.articleContent}>{selectedArticle.summary || selectedArticle.title}</Text>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -438,7 +451,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 14,
     marginHorizontal: 16,
-    marginVertical: 14,
+    marginVertical: 12,
     paddingHorizontal: 14,
     height: 44,
   },
@@ -453,7 +466,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 30,
-    gap: 14,
+    gap: 12,
   },
   card: {
     flexDirection: 'row',
@@ -462,25 +475,67 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginRight: 14,
   },
   doctorAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  onlineStatusDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: '#16A34A',
+    borderWidth: 2,
+    borderColor: Colors.white,
+  },
+  thumbWrapper: {
+    position: 'relative',
     marginRight: 14,
   },
   articleThumb: {
     width: 80,
     height: 80,
-    borderRadius: 12,
+    borderRadius: 14,
     marginRight: 14,
   },
   storeThumb: {
     width: 80,
-    height: 70,
-    borderRadius: 12,
-    marginRight: 14,
+    height: 80,
+    borderRadius: 14,
+    backgroundColor: Colors.bgLight,
+  },
+  storeRxBadge: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(25, 154, 142, 0.92)',
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+    gap: 3,
+  },
+  storeRxBadgeText: {
+    color: Colors.white,
+    fontSize: 8.5,
+    fontWeight: '800',
   },
   cardInfo: {
     flex: 1,
@@ -490,7 +545,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: Colors.accentLight,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
     marginBottom: 4,
   },
@@ -500,18 +555,18 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   cardTitle: {
-    fontSize: 14,
+    fontSize: 14.5,
     fontWeight: '700',
     color: Colors.black,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   cardSubtitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: Colors.secondary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '600',
     color: Colors.primary,
     marginBottom: 4,
@@ -519,6 +574,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 6,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -548,20 +604,44 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     marginLeft: 3,
   },
-  timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
-  },
-  timeText: {
-    fontSize: 10,
-    color: Colors.secondary,
-  },
   metaText: {
     fontSize: 10.5,
     color: Colors.secondary,
-    marginTop: 4,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  cardActionRow: {
+    marginTop: 2,
+  },
+  actionBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  actionBtnText: {
+    color: Colors.white,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actionBtnOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accentLight,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  actionBtnOutlineText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '700',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -572,5 +652,67 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
     color: Colors.secondary,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: '85%',
+  },
+  articleBody: {
+    padding: 16,
+  },
+  articleImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  articleMeta: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  articleContent: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: Colors.textDark,
+  },
+  clearIconBtn: {
+    padding: 4,
+  },
+  filterScrollWrapper: {
+    marginBottom: 12,
+  },
+  filterScrollContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+    backgroundColor: Colors.bgLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.secondary,
+  },
+  filterChipTextActive: {
+    color: Colors.white,
+    fontWeight: '700',
   },
 });

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import Logo from '../components/Logo';
+import Logo from '../components/ui/Logo';
 import { Colors } from '../constants/Colors';
 
 interface SplashProps {

@@ -19,11 +19,14 @@ export const getUsers = async (): Promise<User[]> => {
   }
 };
 
-export const saveUser = async (user: User): Promise<boolean> => {
+export const saveUser = async (userOrName: User | string, email?: string, password?: string): Promise<boolean> => {
   try {
+    const user: User = typeof userOrName === 'string'
+      ? { name: userOrName, email: email || '', password: password || '' }
+      : userOrName;
+
     const users = await getUsers();
-    // Check if email already exists
-    const exists = users.some(u => u.email.toLowerCase() === user.email.toLowerCase());
+    const exists = users.some((u) => u.email.toLowerCase() === user.email.toLowerCase());
     if (exists) return false;
 
     users.push(user);
@@ -37,16 +40,14 @@ export const saveUser = async (user: User): Promise<boolean> => {
 
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   const users = await getUsers();
-  const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  const found = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
   return found || null;
 };
 
 export const updateUserPassword = async (email: string, newPassword: string): Promise<boolean> => {
   try {
     const users = await getUsers();
-    const index = users.findIndex(
-      u => u.email.toLowerCase() === email.toLowerCase()
-    );
+    const index = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
     if (index === -1) return false;
 
     users[index].password = newPassword;
@@ -58,8 +59,9 @@ export const updateUserPassword = async (email: string, newPassword: string): Pr
   }
 };
 
-export const saveLoginSession = async (user: User): Promise<void> => {
+export const saveLoginSession = async (userOrName: User | string, email?: string): Promise<void> => {
   try {
+    const user: User = typeof userOrName === 'string' ? { name: userOrName, email: email || '' } : userOrName;
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(user));
   } catch (e) {
     console.error('Failed to save login session', e);

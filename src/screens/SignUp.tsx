@@ -1,37 +1,30 @@
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
-import InputField from '../components/InputField';
-import Button from '../components/Button';
-import SuccessModal from '../components/SuccessModal';
+import InputField from '../components/ui/InputField';
+import Button from '../components/ui/Button';
+import SuccessModal from '../components/modals/SuccessModal';
 import { validateName, validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
-import { saveUser } from '../utils/storage';
+import { saveUser, getUserByEmail, saveLoginSession } from '../utils/storage';
 
 interface SignUpProps {
-  onBack: () => void;
-  onSignUpSuccess: (name: string) => void;
-  onLoginLink: () => void;
+  onBack?: () => void;
+  onSignUpSuccess?: (name: string, email?: string) => void;
+  onLoginLink?: () => void;
+  navigation?: any;
 }
 
-export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpProps) {
+export default function SignUp({ onBack, onSignUpSuccess, onLoginLink, navigation }: SignUpProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Validation errors
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -105,14 +98,19 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
 
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    onSignUpSuccess(name);
+    if (onSignUpSuccess) onSignUpSuccess(name, email);
+    else if (onLoginLink) onLoginLink();
+    else navigation?.navigate('Login');
   };
+
+  const handleGoBack = () => (onBack ? onBack() : navigation?.goBack());
+  const handleGoLogin = () => (onLoginLink ? onLoginLink() : navigation?.navigate('Login'));
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sign Up</Text>
@@ -128,7 +126,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
           <View style={styles.formSection}>
             {/* Name Input */}
             <InputField
-              icon="user"
+              icon="person-outline"
               placeholder="Enter your name"
               value={name}
               onChangeText={(text) => {
@@ -141,7 +139,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
 
             {/* Email Input */}
             <InputField
-              icon="mail"
+              icon="mail-outline"
               placeholder="Enter your email"
               value={email}
               onChangeText={(text) => {
@@ -155,7 +153,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
 
             {/* Password Input */}
             <InputField
-              icon="lock"
+              icon="lock-closed-outline"
               placeholder="Enter your password"
               value={password}
               onChangeText={(text) => {
@@ -168,7 +166,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
 
             {/* Confirm Password Input */}
             <InputField
-              icon="lock"
+              icon="lock-closed-outline"
               placeholder="Confirm password"
               value={confirmPassword}
               onChangeText={(text) => {
@@ -206,7 +204,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink }: SignUpP
           {/* Footer Link */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={onLoginLink}>
+            <TouchableOpacity onPress={handleGoLogin}>
               <Text style={styles.footerLink}>Login</Text>
             </TouchableOpacity>
           </View>
@@ -272,7 +270,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: Colors.inputIcon,
+    borderColor: Colors.inputIcon || '#A0AEC0',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text, Image } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { Colors } from '../../constants/Colors';
 
 interface LogoProps {
   size?: number;
@@ -13,7 +13,7 @@ export default function Logo({ size = 80, color = Colors.primary, textColor = Co
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/logo.png')}
+        source={require('../../assets/logo.png')}
         style={{ width: size, height: size, tintColor: color }}
         resizeMode="contain"
       />
