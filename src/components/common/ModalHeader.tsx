@@ -7,6 +7,7 @@ interface ModalHeaderProps {
   title: string;
   subtitle?: string;
   onClose: () => void;
+  onBack?: () => void;
   rightAction?: {
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
@@ -14,10 +15,10 @@ interface ModalHeaderProps {
   };
 }
 
-export default function ModalHeader({ title, subtitle, onClose, rightAction }: ModalHeaderProps) {
+export default function ModalHeader({ title, subtitle, onClose, onBack, rightAction }: ModalHeaderProps) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onClose} style={styles.iconBtn} activeOpacity={0.7}>
+      <TouchableOpacity onPress={onBack || onClose} style={styles.iconBtn} activeOpacity={0.7}>
         <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
       </TouchableOpacity>
       <View style={styles.titleContainer}>

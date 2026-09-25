@@ -223,6 +223,14 @@ export default function PharmacyOrderModal({
     }, 1000);
   };
 
+  const handleHeaderBack = () => {
+    if (viewState === 'checkout') {
+      setViewState('main');
+    } else {
+      handleResetAndClose();
+    }
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleResetAndClose}>
       <View style={styles.overlay}>
@@ -230,6 +238,7 @@ export default function PharmacyOrderModal({
           <ModalHeader
             title={viewState === 'main' ? pharmacy.name : viewState === 'checkout' ? 'Order Checkout' : 'Order Placed!'}
             subtitle={viewState === 'main' ? `Delivering in ${pharmacy.deliveryTime || '15-25 mins'} • ${pharmacy.rating} ★` : undefined}
+            onBack={handleHeaderBack}
             onClose={handleResetAndClose}
           />
 
@@ -620,24 +629,19 @@ export default function PharmacyOrderModal({
                 />
               )}
 
-              <View style={styles.dualBtnRow}>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => setViewState('main')}>
-                  <Text style={styles.secondaryBtnText}>Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { flex: 2 }]}
-                  onPress={handlePlaceOrder}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <ActivityIndicator color={Colors.white} size="small" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>
-                      {lastOrderType === 'prescription' ? 'Confirm Prescription Order' : `Confirm Order ($${totalAmount})`}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handlePlaceOrder}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.primaryBtnText}>
+                    {lastOrderType === 'prescription' ? 'Confirm Prescription Order' : `Confirm Order ($${totalAmount})`}
+                  </Text>
+                )}
+              </TouchableOpacity>
             </ScrollView>
           )}
 

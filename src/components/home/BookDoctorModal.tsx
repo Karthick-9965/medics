@@ -129,6 +129,16 @@ export default function BookDoctorModal({
     }, 1200);
   };
 
+  const handleHeaderBack = () => {
+    if (step === 2) {
+      setStep(1);
+    } else if (step === 3) {
+      setStep(2);
+    } else {
+      handleResetAndClose();
+    }
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleResetAndClose}>
       <View style={styles.overlay}>
@@ -136,6 +146,7 @@ export default function BookDoctorModal({
           <ModalHeader
             title={step === 4 ? 'Booking Confirmed' : `Book ${doctor.name}`}
             subtitle={step < 4 ? `Step ${step} of 3` : undefined}
+            onBack={handleHeaderBack}
             onClose={handleResetAndClose}
           />
 
@@ -307,41 +318,32 @@ export default function BookDoctorModal({
               </TouchableOpacity>
             )}
             {step === 2 && (
-              <View style={styles.dualBtnRow}>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => setStep(1)}>
-                  <Text style={styles.secondaryBtnText}>Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { flex: 2 }]}
-                  onPress={() => {
-                    if (!patientName.trim()) {
-                      Alert.alert('Required', 'Please enter patient full name.');
-                      return;
-                    }
-                    setStep(3);
-                  }}
-                >
-                  <Text style={styles.primaryBtnText}>Review & Pay</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={() => {
+                  if (!patientName.trim()) {
+                    Alert.alert('Required', 'Please enter patient full name.');
+                    return;
+                  }
+                  setStep(3);
+                }}
+              >
+                <Text style={styles.primaryBtnText}>Review & Pay</Text>
+                <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+              </TouchableOpacity>
             )}
             {step === 3 && (
-              <View style={styles.dualBtnRow}>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={() => setStep(2)}>
-                  <Text style={styles.secondaryBtnText}>Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryBtn, { flex: 2 }]}
-                  onPress={handleProcessPayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <ActivityIndicator color={Colors.white} size="small" />
-                  ) : (
-                    <Text style={styles.primaryBtnText}>Pay ${totalAmount} & Confirm</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handleProcessPayment}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.primaryBtnText}>Pay ${totalAmount} & Confirm</Text>
+                )}
+              </TouchableOpacity>
             )}
             {step === 4 && (
               <View style={styles.dualBtnRow}>
