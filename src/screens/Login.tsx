@@ -8,7 +8,7 @@ import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
 import SuccessModal from '../components/modals/SuccessModal';
 import { validateEmail, isEmailValidFormat } from '../utils/validation';
-import { getUserByEmail, saveLoginSession } from '../utils/storage';
+import { getUserByEmail, saveLoginSession, saveUser } from '../utils/storage';
 
 interface LoginProps {
   onBack?: () => void;

@@ -160,16 +160,8 @@ function MainTabNavigator() {
 function SplashScreen({ navigation }: SplashScreenProps) {
   return (
     <Splash
-      onFinish={async () => {
-        const session = await getLoginSession();
-        if (session) {
-          navigation.replace('Main', {
-            screen: 'HomeTab',
-            params: { userName: session.name, userEmail: session.email },
-          });
-        } else {
-          navigation.replace('Onboarding');
-        }
+      onFinish={() => {
+        navigation.replace('Onboarding');
       }}
     />
   );

@@ -12,7 +12,14 @@ export interface User {
 export const getUsers = async (): Promise<User[]> => {
   try {
     const usersJson = await AsyncStorage.getItem(USERS_KEY);
-    return usersJson ? JSON.parse(usersJson) : [];
+    if (!usersJson) {
+      const defaultUsers: User[] = [
+        { name: 'User', email: 'user@telemed.com', password: 'password123' },
+      ];
+      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
+      return defaultUsers;
+    }
+    return JSON.parse(usersJson);
   } catch (e) {
     console.error('Failed to load users from storage', e);
     return [];
