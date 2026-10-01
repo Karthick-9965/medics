@@ -29,7 +29,9 @@ export default function ScreenHeader({
         <View style={styles.placeholder} />
       )}
 
-      <Text style={styles.headerTitle}>{title}</Text>
+      <Text style={styles.headerTitle} numberOfLines={1}>
+        {title}
+      </Text>
 
       {rightElement ? (
         <View style={styles.rightWrapper}>{rightElement}</View>
@@ -56,16 +58,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.textDark,
     textAlign: 'center',
+    flex: 1,
+    marginHorizontal: 6,
   },
   placeholder: {
     width: 40,
   },
   rightWrapper: {
-    width: 40,
+    minWidth: 40,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

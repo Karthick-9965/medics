@@ -1,39 +1,42 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
 interface QuickServiceItem {
   id: string;
   name: string;
-  iconName: keyof typeof Ionicons.glyphMap;
-  iconSize?: number;
+  renderIcon: () => React.ReactNode;
 }
 
 const services: QuickServiceItem[] = [
   {
     id: 'doctor',
     name: 'Doctor',
-    iconName: 'medkit',
-    iconSize: 26,
+    renderIcon: () => (
+      <FontAwesome5 name="stethoscope" size={24} color={Colors.primary} />
+    ),
   },
   {
     id: 'pharmacy',
     name: 'Pharmacy',
-    iconName: 'bandage',
-    iconSize: 26,
+    renderIcon: () => (
+      <MaterialCommunityIcons name="pill" size={26} color={Colors.primary} />
+    ),
   },
   {
     id: 'hospital',
     name: 'Hospital',
-    iconName: 'business',
-    iconSize: 24,
+    renderIcon: () => (
+      <FontAwesome5 name="hospital-alt" size={22} color={Colors.primary} />
+    ),
   },
   {
     id: 'ambulance',
     name: 'Ambulance',
-    iconName: 'car-sport',
-    iconSize: 25,
+    renderIcon: () => (
+      <FontAwesome5 name="ambulance" size={22} color={Colors.primary} />
+    ),
   },
 ];
 
@@ -52,7 +55,7 @@ export default function QuickServices({ onServicePress }: QuickServicesProps) {
           activeOpacity={0.8}
         >
           <View style={styles.iconCircle}>
-            <Ionicons name={item.iconName} size={item.iconSize || 24} color={Colors.primary} />
+            {item.renderIcon()}
           </View>
           <Text style={styles.label}>{item.name}</Text>
         </TouchableOpacity>

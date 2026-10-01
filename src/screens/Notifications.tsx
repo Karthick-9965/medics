@@ -15,7 +15,6 @@ import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import SwipeableNotificationCard from '../components/notifications/SwipeableNotificationCard';
 import NotificationDetailModal from '../components/notifications/NotificationDetailModal';
 import { getNotificationMeta } from '../utils/notificationMeta';
-import { sendTestPushNotification } from '../services/notificationManager';
 import {
   getStoredNotifications,
   markNotificationAsRead,
@@ -138,22 +137,6 @@ export default function Notifications({
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.testPushBtn}
-            onPress={async () => {
-              await sendTestPushNotification({
-                title: 'Apollo Medical Alert: Health Checkup Ready',
-                message: 'Your comprehensive diagnostic panel reports and doctor recommendations are ready for review.',
-                type: 'system',
-              });
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="notifications-outline" size={15} color={Colors.primary} />
-            <Text style={styles.testPushText}>Test Push</Text>
-          </TouchableOpacity>
-
           {notifications.length > 0 && (
             <TouchableOpacity
               style={styles.iconActionBtn}
@@ -293,22 +276,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  testPushBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: Colors.accentLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  testPushText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
   },
   iconActionBtn: {
     padding: 6,

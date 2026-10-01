@@ -298,21 +298,6 @@ export default function Messages({
     saveConversations(updatedConvs);
   };
 
-  const handleSimulateIncomingMessage = async () => {
-    const candidates = conversations.filter((c) => c.type === 'doctor');
-    const doctor = candidates[Math.floor(Math.random() * candidates.length)] || candidates[0];
-    if (!doctor) return;
-
-    const sampleDoctorMessages = [
-      `Hello! Please remember to drink warm water and take your prescribed morning tablets.`,
-      `Hi, your diagnostic health report looks very positive! Keep up your morning walk routine.`,
-      `Good day! How are your symptoms progressing after taking the prescribed medication?`,
-      `Hello! Don't forget your scheduled follow-up consultation next week. Let me know if you need anything.`,
-    ];
-    const randomMsg = sampleDoctorMessages[Math.floor(Math.random() * sampleDoctorMessages.length)];
-    await handleReceiveDoctorMessage(doctor.id, randomMsg);
-  };
-
   const handleNotificationSelectChat = (conversationId?: string) => {
     setShowNotifModal(false);
     if (conversationId) {
@@ -329,16 +314,6 @@ export default function Messages({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Messages</Text>
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.testMsgBtn}
-              onPress={handleSimulateIncomingMessage}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.primary} />
-              <Text style={styles.testMsgBtnText}>Test Msg</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Search & Filter */}
@@ -459,25 +434,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: Colors.textDark,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  testMsgBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: Colors.accentLight,
-    gap: 4,
-  },
-  testMsgBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
   },
   scrollList: {
     flex: 1,
