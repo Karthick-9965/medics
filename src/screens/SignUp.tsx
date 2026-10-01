@@ -7,8 +7,9 @@ import { ErrorMessages } from '../constants/ErrorMessages';
 import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
 import SuccessModal from '../components/modals/SuccessModal';
+import ScreenHeader from '../components/common/ScreenHeader';
 import { validateName, validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
-import { saveUser, getUserByEmail, saveLoginSession } from '../utils/storage';
+import { saveUser } from '../utils/storage';
 
 interface SignUpProps {
   onBack?: () => void;
@@ -109,13 +110,7 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink, navigatio
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sign Up</Text>
-        <View style={styles.headerRightPlaceholder} />
-      </View>
+      <ScreenHeader title="Sign Up" onBack={handleGoBack} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -270,7 +265,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: Colors.inputIcon || '#A0AEC0',
+    borderColor: Colors.inputIcon,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -293,6 +288,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 8,
   },
   footerText: {
     color: Colors.secondary,

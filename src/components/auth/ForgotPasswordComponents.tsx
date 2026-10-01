@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   otpBoxExpired: {
     borderColor: Colors.border,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: Colors.bgPage,
   },
   errorText: {
     color: Colors.error,

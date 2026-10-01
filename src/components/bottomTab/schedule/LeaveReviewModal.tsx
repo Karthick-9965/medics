@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { AppointmentItem } from './AppointmentCard';
 import ModalHeader from '../../common/ModalHeader';
+import MedicalAlertModal from '../../modals/MedicalAlertModal';
 
 interface LeaveReviewModalProps {
   visible: boolean;
@@ -20,28 +22,53 @@ export default function LeaveReviewModal({
   onReviewSubmitted,
   onSubmit,
 }: LeaveReviewModalProps) {
+  const insets = useSafeAreaInsets();
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   if (!appointment) return null;
 
   const handleSubmit = () => {
-    if (onReviewSubmitted) onReviewSubmitted(rating, review);
-    if (onSubmit) onSubmit();
-    Alert.alert('Review Submitted', 'Thank you for your feedback!');
-    onClose();
+    if (onReviewSubmitted) {
+      onReviewSubmitted(rating, review);
+      if (onSubmit) onSubmit();
+      onClose();
+    } else {
+      if (onSubmit) onSubmit();
+      setAlertConfig({
+        visible: true,
+        title: 'Review Submitted',
+        message: 'Thank you for your valuable consultation feedback!',
+      });
+    }
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ModalHeader title="Rate Consultation" subtitle={appointment.doctorName} onClose={onClose} />
           <View style={{ padding: 16 }}>
             <View style={styles.starRow}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <Ionicons name="star" size={32} color={rating >= star ? '#F59E0B' : Colors.border} />
+                  <Ionicons name="star" size={32} color={rating >= star ? Colors.warningAmber : Colors.borderLight} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -59,6 +86,25 @@ export default function LeaveReviewModal({
           </View>
         </View>
       </View>
+
+      {/* Project Themed Medical Alert Modal */}
+      <MedicalAlertModal
+        visible={alertConfig.visible}
+        type="success"
+        icon="star"
+        iconColor={Colors.warningAmber}
+        iconBg={Colors.warningBgLight}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onPrimaryPress={() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          onClose();
+        }}
+        onClose={() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          onClose();
+        }}
+      />
     </Modal>
   );
 }
@@ -66,7 +112,7 @@ export default function LeaveReviewModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -15,6 +15,7 @@ import Home from './src/screens/Home';
 import Messages from './src/screens/Messages';
 import Schedule from './src/screens/Schedule';
 import Profile from './src/screens/Profile';
+import Notifications from './src/screens/Notifications';
 import SeeAllScreen from './src/screens/SeeAllScreen';
 import AmbulanceScreen from './src/screens/AmbulanceScreen';
 import BottomTabBar from './src/components/bottomTab/BottomTabBar';
@@ -75,7 +76,22 @@ function HomeScreenWrapper({ navigation, route }: any) {
       onAmbulancePress={() => navigation.navigate('Ambulance')}
       onNavigateToSchedule={() => navigation.navigate('Main', { screen: 'ScheduleTab' })}
       onNavigateToMessages={() => navigation.navigate('Main', { screen: 'MessagesTab' })}
+      onNavigateToNotifications={() => navigation.navigate('Main', { screen: 'NotificationsTab' })}
       onNavigateToProfile={() => navigation.navigate('Main', { screen: 'ProfileTab' })}
+    />
+  );
+}
+
+function NotificationsScreenWrapper({ navigation }: any) {
+  return (
+    <Notifications
+      navigation={navigation}
+      onNavigateToSchedule={() => navigation.navigate('Main', { screen: 'ScheduleTab' })}
+      onNavigateToMessages={(convId) =>
+        navigation.navigate('Main', { screen: 'MessagesTab', params: { conversationId: convId } })
+      }
+      onNavigateToAmbulance={() => navigation.navigate('Ambulance')}
+      onNavigateToPharmacy={() => navigation.navigate('SeeAll', { category: 'pharmacy' })}
     />
   );
 }
@@ -152,6 +168,7 @@ function MainTabNavigator() {
       <Tab.Screen name="HomeTab" component={HomeScreenWrapper} />
       <Tab.Screen name="MessagesTab" component={MessagesScreenWrapper} />
       <Tab.Screen name="ScheduleTab" component={ScheduleScreenWrapper} />
+      <Tab.Screen name="NotificationsTab" component={NotificationsScreenWrapper} />
       <Tab.Screen name="ProfileTab" component={ProfileScreenWrapper} />
     </Tab.Navigator>
   );
@@ -236,11 +253,20 @@ function AmbulanceScreenWrapper({ navigation }: AmbulanceScreenNavProps) {
 }
 
 export default function App() {
-  useAppNotification();
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  useAppNotification({
+    onNotificationOpen: () => {
+      // When tapped from notification banner, navigate to bottom tab Alerts/Notifications
+      if (navigationRef.current?.isReady?.()) {
+        navigationRef.current.navigate('Main', { screen: 'NotificationsTab' });
+      }
+    },
+  });
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           initialRouteName="Splash"
           screenOptions={{

@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
   },
   discountAmount: {
-    color: '#16A34A',
+    color: Colors.successGreen,
   },
   highlightLabel: {
     color: Colors.primary,

@@ -4,7 +4,7 @@ import {
   View,
   Text,
 } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 
 interface HealthStatsRowProps {
@@ -24,33 +24,72 @@ export default function HealthStatsRow({
     <View style={[styles.statsContainer, isTealTheme && styles.statsContainerTeal]}>
       {/* 1. Heart Rate */}
       <View style={styles.statBox}>
-        <View style={styles.iconWrap}>
-          <Ionicons name="heart" size={20} color={isTealTheme ? Colors.white : Colors.logoutRed} />
+        <View
+          style={[
+            styles.iconBadge,
+            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.dangerBgTint },
+          ]}
+        >
+          <Ionicons
+            name="pulse"
+            size={20}
+            color={isTealTheme ? Colors.white : Colors.dangerRed}
+          />
         </View>
-        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Heart rate</Text>
-        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{heartRate}</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>
+          Heart rate
+        </Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>
+          {heartRate}
+        </Text>
       </View>
 
       <View style={[styles.statDivider, isTealTheme ? styles.statDividerTeal : styles.statDividerLight]} />
 
       {/* 2. Calories */}
       <View style={styles.statBox}>
-        <View style={styles.iconWrap}>
-          <Ionicons name="flame" size={20} color={isTealTheme ? Colors.white : '#FF9800'} />
+        <View
+          style={[
+            styles.iconBadge,
+            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.warningBgLight },
+          ]}
+        >
+          <Ionicons
+            name="flame"
+            size={20}
+            color={isTealTheme ? Colors.white : Colors.apolloOrange}
+          />
         </View>
-        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Calories</Text>
-        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{calories}</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>
+          Calories
+        </Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>
+          {calories}
+        </Text>
       </View>
 
       <View style={[styles.statDivider, isTealTheme ? styles.statDividerTeal : styles.statDividerLight]} />
 
       {/* 3. Weight */}
       <View style={styles.statBox}>
-        <View style={styles.iconWrap}>
-          <FontAwesome5 name="weight" size={18} color={isTealTheme ? Colors.white : Colors.primary} />
+        <View
+          style={[
+            styles.iconBadge,
+            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.accentLight },
+          ]}
+        >
+          <Ionicons
+            name="speedometer"
+            size={20}
+            color={isTealTheme ? Colors.white : Colors.primary}
+          />
         </View>
-        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>Weight</Text>
-        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>{weight}</Text>
+        <Text style={[styles.statLabel, isTealTheme ? styles.statLabelTeal : styles.statLabelLight]}>
+          Weight
+        </Text>
+        <Text style={[styles.statValue, isTealTheme ? styles.statValueTeal : styles.statValueLight]}>
+          {weight}
+        </Text>
       </View>
     </View>
   );
@@ -62,12 +101,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     width: '100%',
-    marginBottom: 16,
+    marginBottom: 20,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   statsContainerTeal: {
     backgroundColor: 'transparent',
@@ -75,21 +120,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginTop: 10,
     marginBottom: 6,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   statBox: {
     alignItems: 'center',
     flex: 1,
   },
-  iconWrap: {
-    marginBottom: 4,
-    height: 24,
+  iconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 6,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   statLabelLight: {
     color: Colors.secondary,
@@ -109,10 +158,10 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 34,
+    height: 38,
   },
   statDividerLight: {
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.borderLight,
   },
   statDividerTeal: {
     backgroundColor: 'rgba(255, 255, 255, 0.35)',

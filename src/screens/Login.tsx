@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
 import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
 import SuccessModal from '../components/modals/SuccessModal';
+import ScreenHeader from '../components/common/ScreenHeader';
+import SocialLoginButtons from '../components/common/SocialLoginButtons';
 import { validateEmail, isEmailValidFormat } from '../utils/validation';
-import { getUserByEmail, saveLoginSession, saveUser } from '../utils/storage';
+import { getUserByEmail, saveLoginSession } from '../utils/storage';
 
 interface LoginProps {
   onBack?: () => void;
@@ -41,6 +42,9 @@ export default function Login({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+
+  const hasNavigatedRef = useRef(false);
+  const userRef = useRef<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (route?.params?.email) setEmail(route.params.email);
@@ -82,7 +86,9 @@ export default function Login({
     }
 
     setIsWrongPassword(false);
+    userRef.current = { name: user.name, email: user.email };
     setLoggedInUser({ name: user.name, email: user.email });
+    hasNavigatedRef.current = false;
 
     // Save session
     await saveLoginSession(user.name, user.email);
@@ -92,9 +98,13 @@ export default function Login({
   };
 
   const handleSuccessModalClose = () => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+
     setShowSuccessModal(false);
-    if (onLoginSuccess && loggedInUser) {
-      onLoginSuccess(loggedInUser.name, loggedInUser.email);
+    const currentUser = loggedInUser || userRef.current;
+    if (onLoginSuccess && currentUser) {
+      onLoginSuccess(currentUser.name, currentUser.email);
     } else if (onLoginSuccess) {
       const displayName = email.split('@')[0];
       onLoginSuccess(displayName.charAt(0).toUpperCase() + displayName.slice(1), email);
@@ -110,13 +120,7 @@ export default function Login({
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Login</Text>
-        <View style={styles.headerRightPlaceholder} />
-      </View>
+      <ScreenHeader title="Login" onBack={handleGoBack} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -185,34 +189,12 @@ export default function Login({
             </TouchableOpacity>
           </View>
 
-          {/* OR Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
           {/* Social Sign-in Buttons */}
-          <View style={styles.socialButtonsSection}>
-            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
-              <Image
-                source={require('../assets/google_icon.png')}
-                style={styles.socialImage}
-                resizeMode="contain"
-              />
-              <Text style={styles.socialButtonText}>Sign in with Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
-              <Ionicons name="logo-apple" size={20} color={Colors.black} style={styles.socialIcon} />
-              <Text style={styles.socialButtonText}>Sign in with Apple</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.socialButton} onPress={() => handleSuccessModalClose()}>
-              <Ionicons name="logo-facebook" size={20} color="#4267B2" style={styles.socialIcon} />
-              <Text style={styles.socialButtonText}>Sign in with Facebook</Text>
-            </TouchableOpacity>
-          </View>
+          <SocialLoginButtons
+            onGooglePress={handleSuccessModalClose}
+            onApplePress={handleSuccessModalClose}
+            onFacebookPress={handleSuccessModalClose}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -223,6 +205,7 @@ export default function Login({
         subtitle="Once again you login successfully into medidoc app"
         buttonTitle="Go to home"
         onPressButton={handleSuccessModalClose}
+        autoCloseDelay={3000}
       />
     </SafeAreaView>
   );
@@ -297,7 +280,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
+    marginTop: 18,
+    marginBottom: 8,
   },
   footerText: {
     color: Colors.secondary,
@@ -307,48 +291,5 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 14,
     fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 28,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.dividerLine || '#E5E7EB',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: Colors.inputIcon || '#9CA3AF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  socialButtonsSection: {
-    gap: 16,
-  },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-  },
-  socialIcon: {
-    marginRight: 12,
-  },
-  socialImage: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
-  },
-  socialButtonText: {
-    fontSize: 15,
-    color: Colors.socialText || '#1F2937',
-    fontWeight: '600',
   },
 });

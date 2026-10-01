@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, ScrollView, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
 import ModalHeader from '../../common/ModalHeader';
+import MedicalAlertModal, { MedicalAlertType } from '../../modals/MedicalAlertModal';
 
 export interface UserProfileData {
   name: string;
@@ -34,7 +36,20 @@ const BLOOD_GROUPS = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 const GENDERS = ['Male', 'Female', 'Other'];
 
 export default function PersonalInfoModal({ visible, initialData, onClose, onSave }: PersonalInfoModalProps) {
+  const insets = useSafeAreaInsets();
   const [formData, setFormData] = useState<UserProfileData>(initialData);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    type?: MedicalAlertType;
+    icon?: keyof typeof Ionicons.glyphMap;
+    title: string;
+    message: string;
+    onPrimaryPress?: () => void;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   useEffect(() => {
     setFormData(initialData);
@@ -46,14 +61,30 @@ export default function PersonalInfoModal({ visible, initialData, onClose, onSav
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('Validation', 'Please enter your name.');
+      setAlertConfig({
+        visible: true,
+        type: 'warning',
+        icon: 'alert-circle-outline',
+        title: 'Validation Error',
+        message: 'Please enter your full patient name before saving.',
+        onPrimaryPress: () => setAlertConfig((prev) => ({ ...prev, visible: false })),
+      });
       return;
     }
     try {
       await AsyncStorage.setItem('@user_profile_data', JSON.stringify(formData));
       onSave(formData);
-      Alert.alert('Profile Saved', 'Personal medical information updated successfully.');
-      onClose();
+      setAlertConfig({
+        visible: true,
+        type: 'success',
+        icon: 'checkmark-circle',
+        title: 'Profile Updated',
+        message: 'Personal medical information has been updated successfully.',
+        onPrimaryPress: () => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          onClose();
+        },
+      });
     } catch (e) {
       console.log(e);
     }
@@ -72,9 +103,16 @@ export default function PersonalInfoModal({ visible, initialData, onClose, onSav
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <ModalHeader title="Personal Information" onClose={onClose} />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             <Text style={styles.sectionHeader}>Basic Contact Details</Text>
@@ -129,6 +167,23 @@ export default function PersonalInfoModal({ visible, initialData, onClose, onSav
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Project Themed Medical Alert Modal */}
+      <MedicalAlertModal
+        visible={alertConfig.visible}
+        type={alertConfig.type}
+        icon={alertConfig.icon}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onPrimaryPress={() => {
+          if (alertConfig.onPrimaryPress) {
+            alertConfig.onPrimaryPress();
+          } else {
+            setAlertConfig((prev) => ({ ...prev, visible: false }));
+          }
+        }}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </Modal>
   );
 }

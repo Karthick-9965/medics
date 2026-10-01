@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import HomeHeader from '../components/home/HomeHeader';
@@ -11,25 +11,18 @@ import HealthBanner from '../components/home/HealthBanner';
 import SectionHeader from '../components/home/SectionHeader';
 import DoctorCard from '../components/home/DoctorCard';
 import ArticleCard from '../components/home/ArticleCard';
-import PharmacyCard from '../components/home/PharmacyCard';
-import HospitalCard from '../components/home/HospitalCard';
+import FacilityCard from '../components/home/FacilityCard';
 import EmergencyCareCard from '../components/home/EmergencyCareCard';
-import HomeProfileModal from '../components/home/HomeProfileModal';
-import LogoutModal from '../components/modals/LogoutModal';
-import NotificationsModal from '../components/home/NotificationsModal';
-import BookDoctorModal from '../components/home/BookDoctorModal';
-import PharmacyOrderModal from '../components/home/PharmacyOrderModal';
-import HospitalDirectionsModal from '../components/home/HospitalDirectionsModal';
-import ModalHeader from '../components/common/ModalHeader';
+import HomeSectionCarousel from '../components/home/HomeSectionCarousel';
+import HomeModalsContainer from '../components/home/HomeModalsContainer';
+import HomeSearchResults, { SearchCategoryFilter } from '../components/home/HomeSearchResults';
 import { SeeAllCategory } from './SeeAllScreen';
 import { getLoginSession, clearLoginSession } from '../utils/storage';
-import { getUnreadNotificationsCount, subscribeNotifications } from '../services/notificationStorage';
 import { DOCTORS_DATA, DoctorItem } from '../constants/doctorsData';
 import { ARTICLES_DATA, ArticleItem } from '../constants/articlesData';
 import { PHARMACIES_DATA, PharmacyItem } from '../constants/pharmaciesData';
 import { HOSPITALS_DATA, HospitalItem } from '../constants/hospitalsData';
 
-type SearchCategoryFilter = 'all' | 'doctor' | 'pharmacy' | 'article' | 'hospital';
 
 interface HomeProps {
   userName?: string;
@@ -39,6 +32,7 @@ interface HomeProps {
   onAmbulancePress?: () => void;
   onNavigateToSchedule?: () => void;
   onNavigateToMessages?: () => void;
+  onNavigateToNotifications?: () => void;
   onNavigateToProfile?: () => void;
   navigation?: any;
 }
@@ -55,11 +49,8 @@ export default function Home({
   navigation,
 }: HomeProps) {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [showHomeProfileModal, setShowHomeProfileModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [storedName, setStoredName] = useState('');
-  const [storedEmail, setStoredEmail] = useState('');
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<SearchCategoryFilter>('all');
@@ -72,23 +63,29 @@ export default function Home({
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
 
   const userName = (propName && propName !== 'User') ? propName : (storedName || 'User');
-  const effectiveEmail = (propEmail && !propEmail.includes('@example.com')) ? propEmail : (storedEmail || `${userName.toLowerCase().replace(/\s+/g, '')}@example.com`);
 
   useEffect(() => {
     const init = async () => {
       const session = await getLoginSession();
       if (session) {
         setStoredName(session.name);
-        setStoredEmail(session.email);
       }
       const av = await AsyncStorage.getItem('@user_avatar');
       if (av) setAvatarUri(av);
     };
     init();
-    getUnreadNotificationsCount().then(setUnreadNotifCount);
-    const unsub = subscribeNotifications((list) => setUnreadNotifCount(list.filter((n) => !n.read).length));
-    return () => unsub();
   }, [propName, propEmail]);
+
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem('@user_avatar').then((av) => {
+        setAvatarUri(av);
+      });
+      getLoginSession().then((session) => {
+        if (session?.name) setStoredName(session.name);
+      });
+    }, [])
+  );
 
   const handleGoSeeAll = (category: SeeAllCategory, query?: string) => {
     const q = query !== undefined ? query : (searchQuery.trim() ? searchQuery.trim() : undefined);
@@ -99,6 +96,11 @@ export default function Home({
   const handleGoAmbulance = () => {
     if (onAmbulancePress) onAmbulancePress();
     else navigation?.navigate('Ambulance');
+  };
+
+  const handleGoProfile = () => {
+    if (onNavigateToProfile) onNavigateToProfile();
+    else navigation?.navigate('Main', { screen: 'ProfileTab' });
   };
 
   const handleConfirmLogout = async () => {
@@ -191,13 +193,11 @@ export default function Home({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {/* 1. Header with Clickable Avatar */}
+        {/* 1. Header with Clickable Avatar / Quick Account -> Goes to My Profile */}
         <HomeHeader
           userName={userName}
           avatarUri={avatarUri}
-          unreadCount={unreadNotifCount}
-          onProfilePress={() => setShowHomeProfileModal(true)}
-          onNotificationPress={() => setShowNotificationsModal(true)}
+          onProfilePress={handleGoProfile}
         />
 
         {/* 2. Interactive Search Bar for Doctors, Drugs, Articles, Hospitals */}
@@ -219,186 +219,26 @@ export default function Home({
         />
 
         {isSearching ? (
-          <>
-            {/* Search Summary Header */}
-            <View style={styles.searchHeader}>
-              <View style={styles.searchHeaderLeft}>
-                <Text style={styles.searchTitle}>Search Results</Text>
-                <Text style={styles.searchSubtitle}>
-                  {totalResults > 0
-                    ? `Found ${totalResults} result${totalResults > 1 ? 's' : ''} for "${searchQuery.trim()}"`
-                    : `No results for "${searchQuery.trim()}"`}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery('');
-                  setActiveCategoryFilter('all');
-                }}
-                activeOpacity={0.7}
-                style={styles.clearBadge}
-              >
-                <Text style={styles.clearBadgeText}>Clear</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Category Filter Tabs */}
-            <View style={styles.tabsWrapper}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tabsContent}
-              >
-                {SEARCH_TABS.map((tab) => {
-                  const isSelected = activeCategoryFilter === tab.key;
-                  return (
-                    <TouchableOpacity
-                      key={tab.key}
-                      style={[styles.tabChip, isSelected && styles.tabChipActive]}
-                      onPress={() => setActiveCategoryFilter(tab.key)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.tabChipText, isSelected && styles.tabChipTextActive]}>
-                        {tab.label} ({tab.count})
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Empty State */}
-            {totalResults === 0 ? (
-              <View style={styles.emptySearchContainer}>
-                <View style={styles.emptyIconCircle}>
-                  <Ionicons name="search-outline" size={32} color={Colors.primary} />
-                </View>
-                <Text style={styles.emptySearchTitle}>No results found</Text>
-                <Text style={styles.emptySearchSub}>
-                  We couldn't find any doctor, drug/pharmacy, article, or hospital matching "{searchQuery.trim()}".
-                </Text>
-                <TouchableOpacity
-                  style={styles.clearSearchBtn}
-                  onPress={() => {
-                    setSearchQuery('');
-                    setActiveCategoryFilter('all');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.clearSearchBtnText}>Clear Search</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
-
-            {/* 1. Doctors Results */}
-            {(activeCategoryFilter === 'all' || activeCategoryFilter === 'doctor') &&
-            filteredDoctors.length > 0 ? (
-              <View style={styles.section}>
-                <SectionHeader
-                  title={`Doctors (${filteredDoctors.length})`}
-                  onSeeAllPress={() => handleGoSeeAll('doctor', searchQuery.trim())}
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {filteredDoctors.map((doctor) => (
-                    <DoctorCard
-                      key={doctor.id}
-                      name={doctor.name}
-                      specialization={doctor.specialization}
-                      image={doctor.image}
-                      rating={doctor.rating}
-                      distance={doctor.distance}
-                      onPress={() => setBookingDoctor(doctor)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            ) : null}
-
-            {/* 2. Drugs & Pharmacy Results */}
-            {(activeCategoryFilter === 'all' || activeCategoryFilter === 'pharmacy') &&
-            filteredPharmacies.length > 0 ? (
-              <View style={styles.section}>
-                <SectionHeader
-                  title={`Drugs & Pharmacies (${filteredPharmacies.length})`}
-                  onSeeAllPress={() => handleGoSeeAll('pharmacy', searchQuery.trim())}
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {filteredPharmacies.map((pharmacy) => (
-                    <PharmacyCard
-                      key={pharmacy.id}
-                      name={pharmacy.name}
-                      image={pharmacy.image}
-                      rating={pharmacy.rating}
-                      distance={pharmacy.distance}
-                      onPress={() => setOrderingPharmacy(pharmacy)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            ) : null}
-
-            {/* 3. Health Articles Results */}
-            {(activeCategoryFilter === 'all' || activeCategoryFilter === 'article') &&
-            filteredArticles.length > 0 ? (
-              <View style={styles.section}>
-                <SectionHeader
-                  title={`Health Articles (${filteredArticles.length})`}
-                  onSeeAllPress={() => handleGoSeeAll('article', searchQuery.trim())}
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {filteredArticles.map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      title={article.title}
-                      image={article.image}
-                      date={article.date}
-                      readTime={article.readTime}
-                      onPress={() => setSelectedArticle(article)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            ) : null}
-
-            {/* 4. Hospitals Results */}
-            {(activeCategoryFilter === 'all' || activeCategoryFilter === 'hospital') &&
-            filteredHospitals.length > 0 ? (
-              <View style={styles.section}>
-                <SectionHeader
-                  title={`Hospitals (${filteredHospitals.length})`}
-                  onSeeAllPress={() => handleGoSeeAll('hospital', searchQuery.trim())}
-                />
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                >
-                  {filteredHospitals.map((hospital) => (
-                    <HospitalCard
-                      key={hospital.id}
-                      name={hospital.name}
-                      image={hospital.image}
-                      rating={hospital.rating}
-                      distance={hospital.distance}
-                      onPress={() => setDirectionsHospital(hospital)}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            ) : null}
-          </>
+          <HomeSearchResults
+            searchQuery={searchQuery}
+            activeCategoryFilter={activeCategoryFilter}
+            searchTabs={SEARCH_TABS}
+            totalResults={totalResults}
+            filteredDoctors={filteredDoctors}
+            filteredPharmacies={filteredPharmacies}
+            filteredArticles={filteredArticles}
+            filteredHospitals={filteredHospitals}
+            onSelectCategoryFilter={setActiveCategoryFilter}
+            onClearSearch={() => {
+              setSearchQuery('');
+              setActiveCategoryFilter('all');
+            }}
+            onSeeAll={handleGoSeeAll}
+            onSelectDoctor={(doctor) => setBookingDoctor(doctor)}
+            onSelectPharmacy={(pharmacy) => setOrderingPharmacy(pharmacy)}
+            onSelectArticle={(article) => setSelectedArticle(article)}
+            onSelectHospital={(hospital) => setDirectionsHospital(hospital)}
+          />
         ) : (
           <>
             {/* 3. Quick Services */}
@@ -413,107 +253,79 @@ export default function Home({
             <HealthBanner />
 
             {/* 5. Specialists */}
-            <View style={styles.section}>
-              <SectionHeader
-                title="Specialists"
-                onSeeAllPress={() => handleGoSeeAll('doctor')}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-              >
-                {DOCTORS_DATA.slice(0, 3).map((doctor) => (
-                  <DoctorCard
-                    key={doctor.id}
-                    name={doctor.name}
-                    specialization={doctor.specialization}
-                    image={doctor.image}
-                    rating={doctor.rating}
-                    distance={doctor.distance}
-                    onPress={() => setBookingDoctor(doctor)}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            <HomeSectionCarousel
+              title="Specialists"
+              onSeeAllPress={() => handleGoSeeAll('doctor')}
+            >
+              {DOCTORS_DATA.slice(0, 3).map((doctor) => (
+                <DoctorCard
+                  key={doctor.id}
+                  name={doctor.name}
+                  specialization={doctor.specialization}
+                  image={doctor.image}
+                  rating={doctor.rating}
+                  distance={doctor.distance}
+                  onPress={() => setBookingDoctor(doctor)}
+                />
+              ))}
+            </HomeSectionCarousel>
 
             {/* 6. Health Article */}
-            <View style={styles.section}>
-              <SectionHeader
-                title="Health article"
-                onSeeAllPress={() => handleGoSeeAll('article')}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-              >
-                {ARTICLES_DATA.slice(0, 3).map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    title={article.title}
-                    image={article.image}
-                    date={article.date}
-                    readTime={article.readTime}
-                    onPress={() => setSelectedArticle(article)}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            <HomeSectionCarousel
+              title="Health article"
+              onSeeAllPress={() => handleGoSeeAll('article')}
+            >
+              {ARTICLES_DATA.slice(0, 3).map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  title={article.title}
+                  image={article.image}
+                  date={article.date}
+                  readTime={article.readTime}
+                  onPress={() => setSelectedArticle(article)}
+                />
+              ))}
+            </HomeSectionCarousel>
 
             {/* 7. Pharmacy */}
-            <View style={styles.section}>
-              <SectionHeader
-                title="Pharmacy"
-                onSeeAllPress={() => handleGoSeeAll('pharmacy')}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-              >
-                {PHARMACIES_DATA.slice(0, 3).map((pharmacy) => (
-                  <PharmacyCard
-                    key={pharmacy.id}
-                    name={pharmacy.name}
-                    image={pharmacy.image}
-                    rating={pharmacy.rating}
-                    distance={pharmacy.distance}
-                    onPress={() => {
-                      setOrderingPharmacy(pharmacy);
-                      setPharmacyModalMode('catalog');
-                    }}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            <HomeSectionCarousel
+              title="Pharmacy"
+              onSeeAllPress={() => handleGoSeeAll('pharmacy')}
+            >
+              {PHARMACIES_DATA.slice(0, 3).map((pharmacy) => (
+                <FacilityCard
+                  key={pharmacy.id}
+                  name={pharmacy.name}
+                  image={pharmacy.image}
+                  rating={pharmacy.rating}
+                  distance={pharmacy.distance}
+                  onPress={() => {
+                    setOrderingPharmacy(pharmacy);
+                    setPharmacyModalMode('catalog');
+                  }}
+                />
+              ))}
+            </HomeSectionCarousel>
 
             {/* 8. Nearby Hospital */}
-            <View style={styles.section}>
-              <SectionHeader
-                title="Nearby Hospital"
-                onSeeAllPress={() => handleGoSeeAll('hospital')}
-              />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-              >
-                {HOSPITALS_DATA.slice(0, 3).map((hospital) => (
-                  <HospitalCard
-                    key={hospital.id}
-                    name={hospital.name}
-                    image={hospital.image}
-                    rating={hospital.rating}
-                    distance={hospital.distance}
-                    onPress={() => setDirectionsHospital(hospital)}
-                  />
-                ))}
-              </ScrollView>
-            </View>
+            <HomeSectionCarousel
+              title="Nearby Hospital"
+              onSeeAllPress={() => handleGoSeeAll('hospital')}
+            >
+              {HOSPITALS_DATA.slice(0, 3).map((hospital) => (
+                <FacilityCard
+                  key={hospital.id}
+                  name={hospital.name}
+                  image={hospital.image}
+                  rating={hospital.rating}
+                  distance={hospital.distance}
+                  onPress={() => setDirectionsHospital(hospital)}
+                />
+              ))}
+            </HomeSectionCarousel>
 
             {/* 9. Emergency Care */}
-            <View style={styles.section}>
+            <View style={styles.lastSection}>
               <SectionHeader title="Emergency Care" showSeeAll={false} />
               <EmergencyCareCard onGetHelpPress={handleGoAmbulance} />
             </View>
@@ -521,27 +333,10 @@ export default function Home({
         )}
       </ScrollView>
 
-      {/* Modals */}
-      <HomeProfileModal
-        visible={showHomeProfileModal}
-        userName={userName}
-        userEmail={effectiveEmail}
-        avatarUri={avatarUri}
-        onClose={() => setShowHomeProfileModal(false)}
-        onNavigateToProfile={() => {
-          setShowHomeProfileModal(false);
-          if (onNavigateToProfile) onNavigateToProfile();
-          else navigation?.navigate('Main', { screen: 'ProfileTab' });
-        }}
-        onLogout={() => {
-          setShowHomeProfileModal(false);
-          setShowLogoutModal(true);
-        }}
-      />
-
-      <NotificationsModal
-        visible={showNotificationsModal}
-        onClose={() => setShowNotificationsModal(false)}
+      {/* Modular Modals Container */}
+      <HomeModalsContainer
+        showNotificationsModal={showNotificationsModal}
+        onCloseNotificationsModal={() => setShowNotificationsModal(false)}
         onNavigateToSchedule={() => {
           if (onNavigateToSchedule) onNavigateToSchedule();
           else navigation?.navigate('Main', { screen: 'ScheduleTab' });
@@ -552,57 +347,23 @@ export default function Home({
           if (onNavigateToMessages) onNavigateToMessages();
           else navigation?.navigate('Main', { screen: 'MessagesTab' });
         }}
-      />
 
-      <BookDoctorModal
-        visible={!!bookingDoctor}
-        doctor={bookingDoctor}
-        onClose={() => setBookingDoctor(null)}
-        onNavigateToSchedule={() => {
-          setBookingDoctor(null);
-          if (onNavigateToSchedule) onNavigateToSchedule();
-          else navigation?.navigate('Main', { screen: 'ScheduleTab' });
-        }}
-      />
+        bookingDoctor={bookingDoctor}
+        onCloseBookingDoctor={() => setBookingDoctor(null)}
 
-      <PharmacyOrderModal
-        visible={!!orderingPharmacy}
-        pharmacy={orderingPharmacy}
-        initialMode={pharmacyModalMode}
-        onClose={() => setOrderingPharmacy(null)}
-      />
+        orderingPharmacy={orderingPharmacy}
+        pharmacyModalMode={pharmacyModalMode}
+        onCloseOrderingPharmacy={() => setOrderingPharmacy(null)}
 
-      <HospitalDirectionsModal
-        visible={!!directionsHospital}
-        hospital={directionsHospital}
-        onClose={() => setDirectionsHospital(null)}
-        onAmbulancePress={handleGoAmbulance}
-      />
+        directionsHospital={directionsHospital}
+        onCloseDirectionsHospital={() => setDirectionsHospital(null)}
 
-      {/* Article Detail Modal */}
-      <Modal visible={!!selectedArticle} animationType="slide" transparent onRequestClose={() => setSelectedArticle(null)}>
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <ModalHeader title={selectedArticle?.title || 'Article'} onClose={() => setSelectedArticle(null)} />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.articleBody}>
-              {selectedArticle && (
-                <>
-                  <Image source={selectedArticle.image} style={styles.articleImage} />
-                  <Text style={styles.articleCategory}>{selectedArticle.category}</Text>
-                  <Text style={styles.articleHeadline}>{selectedArticle.title}</Text>
-                  <Text style={styles.articleMeta}>{selectedArticle.author || 'Medical Staff'} • {selectedArticle.date} • {selectedArticle.readTime}</Text>
-                  <Text style={styles.articleContent}>{selectedArticle.summary || selectedArticle.title}</Text>
-                </>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        selectedArticle={selectedArticle}
+        onCloseSelectedArticle={() => setSelectedArticle(null)}
 
-      <LogoutModal
-        visible={showLogoutModal}
-        onCancel={() => setShowLogoutModal(false)}
-        onConfirm={handleConfirmLogout}
+        showLogoutModal={showLogoutModal}
+        onCloseLogoutModal={() => setShowLogoutModal(false)}
+        onConfirmLogout={handleConfirmLogout}
       />
     </SafeAreaView>
   );
@@ -614,160 +375,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 24,
   },
+  lastSection: {
+    marginBottom: 0,
+  },
   horizontalList: {
     paddingLeft: 20,
     paddingRight: 10,
-  },
-  searchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  searchHeaderLeft: {
-    flex: 1,
-  },
-  searchTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.black,
-    marginBottom: 2,
-  },
-  searchSubtitle: {
-    fontSize: 12.5,
-    color: Colors.secondary,
-    fontWeight: '500',
-  },
-  clearBadge: {
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  clearBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  tabsWrapper: {
-    marginBottom: 18,
-  },
-  tabsContent: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  tabChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
-    backgroundColor: Colors.bgLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tabChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  tabChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.secondary,
-  },
-  tabChipTextActive: {
-    color: Colors.white,
-    fontWeight: '700',
-  },
-  emptySearchContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-    paddingVertical: 45,
-  },
-  emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  emptySearchTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.black,
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  emptySearchSub: {
-    fontSize: 13,
-    color: Colors.secondary,
-    textAlign: 'center',
-    lineHeight: 19,
-    marginBottom: 18,
-  },
-  clearSearchBtn: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  clearSearchBtnText: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '85%',
-  },
-  articleBody: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  articleImage: {
-    width: '100%',
-    height: 190,
-    borderRadius: 16,
-    marginBottom: 14,
-  },
-  articleCategory: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  articleHeadline: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.black,
-    marginBottom: 6,
-    lineHeight: 24,
-  },
-  articleMeta: {
-    fontSize: 12,
-    color: Colors.secondary,
-    marginBottom: 14,
-  },
-  articleContent: {
-    fontSize: 14,
-    lineHeight: 23,
-    color: Colors.textDark,
   },
 });
 

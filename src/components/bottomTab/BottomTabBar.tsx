@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps as RNBottomTabBarProps } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
+import { getUnreadNotificationsCount, subscribeNotifications } from '../../services/notificationStorage';
 
-export type TabKey = 'home' | 'messages' | 'schedule' | 'profile';
+export type TabKey = 'home' | 'messages' | 'schedule' | 'notifications' | 'profile';
 
 interface TabConfig {
   key: TabKey;
@@ -20,6 +21,7 @@ const TABS: TabConfig[] = [
   { key: 'home', routeName: 'HomeTab', label: 'Home', activeIcon: 'home', inactiveIcon: 'home-outline' },
   { key: 'messages', routeName: 'MessagesTab', label: 'Messages', activeIcon: 'chatbubble-ellipses', inactiveIcon: 'chatbubble-ellipses-outline' },
   { key: 'schedule', routeName: 'ScheduleTab', label: 'Schedule', activeIcon: 'calendar', inactiveIcon: 'calendar-outline' },
+  { key: 'notifications', routeName: 'NotificationsTab', label: 'Alerts', activeIcon: 'notifications', inactiveIcon: 'notifications-outline' },
   { key: 'profile', routeName: 'ProfileTab', label: 'Profile', activeIcon: 'person', inactiveIcon: 'person-outline' },
 ];
 
@@ -37,8 +39,9 @@ export default function BottomTabBar({
   unreadCount,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 16 : 10);
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'ios' ? 8 : 4);
   const [dynUnreadCount, setDynUnreadCount] = React.useState(0);
+  const [dynNotifCount, setDynNotifCount] = React.useState(0);
 
   React.useEffect(() => {
     const fetchUnread = async () => {
@@ -58,6 +61,14 @@ export default function BottomTabBar({
     return () => clearInterval(interval);
   }, []);
 
+  React.useEffect(() => {
+    getUnreadNotificationsCount().then(setDynNotifCount);
+    const unsub = subscribeNotifications((list) => {
+      setDynNotifCount(list.filter((n) => !n.read).length);
+    });
+    return () => unsub();
+  }, []);
+
   const effectiveUnread = unreadCount !== undefined ? unreadCount : dynUnreadCount;
 
   const currentRouteName = state ? state.routes[state.index]?.name : undefined;
@@ -66,6 +77,8 @@ export default function BottomTabBar({
       ? 'messages'
       : currentRouteName === 'ScheduleTab'
       ? 'schedule'
+      : currentRouteName === 'NotificationsTab'
+      ? 'notifications'
       : currentRouteName === 'ProfileTab'
       ? 'profile'
       : 'home'
@@ -116,6 +129,13 @@ export default function BottomTabBar({
                     <Text style={styles.badgeText}>{effectiveUnread}</Text>
                   </View>
                 )}
+
+                {/* Badge for Notifications */}
+                {tab.key === 'notifications' && dynNotifCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{dynNotifCount > 9 ? '9+' : dynNotifCount}</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -129,19 +149,13 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: Colors.dividerLine || Colors.border,
-    paddingTop: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: Colors.black,
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    borderTopColor: Colors.dividerLine,
+    paddingTop: 8,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 10,
   },
   tabsRow: {
     flexDirection: 'row',

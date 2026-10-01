@@ -15,7 +15,7 @@ export const PHARMACIES_DATA: PharmacyItem[] = [
   {
     id: '1',
     name: 'Apollo Pharmacy',
-    image: require('../assets/images/home/pharmacies/apollopharmacy.png'),
+    image: require('../assets/images/pharmacies/apollopharmacy.png'),
     rating: '4.8',
     distance: '1.2 km away',
     address: '124 Medical Corridor, Block B, Health City',
@@ -27,7 +27,7 @@ export const PHARMACIES_DATA: PharmacyItem[] = [
   {
     id: '2',
     name: 'MedLife Care',
-    image: require('../assets/images/home/pharmacies/medilife.png'),
+    image: require('../assets/images/pharmacies/medilife.png'),
     rating: '4.7',
     distance: '2.0 km away',
     address: '89 Central Avenue, West Wing, Metro City',
@@ -39,7 +39,7 @@ export const PHARMACIES_DATA: PharmacyItem[] = [
   {
     id: '3',
     name: 'Care Pharma Direct',
-    image: require('../assets/images/home/pharmacies/carepharma.png'),
+    image: require('../assets/images/pharmacies/carepharma.png'),
     rating: '4.6',
     distance: '3.1 km away',
     address: '45 Health Square, Near City Library',
@@ -51,7 +51,7 @@ export const PHARMACIES_DATA: PharmacyItem[] = [
   {
     id: '4',
     name: 'HealthPlus Pharmacy',
-    image: require('../assets/images/home/pharmacies/healthplus.png'),
+    image: require('../assets/images/pharmacies/healthplus.png'),
     rating: '4.9',
     distance: '800m away',
     address: '12 Park Road, Beside Central Hospital',
@@ -63,7 +63,7 @@ export const PHARMACIES_DATA: PharmacyItem[] = [
   {
     id: '5',
     name: 'WellCare Pharmacy',
-    image: require('../assets/images/home/pharmacies/wellcare.png'),
+    image: require('../assets/images/pharmacies/wellcare.png'),
     rating: '4.5',
     distance: '4.0 km away',
     address: '77 Sunrise Highway, East Sector',

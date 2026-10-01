@@ -5,12 +5,11 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 
 export interface ProfileMenuItemProps {
-  icon: any;
-  iconType?: 'ionicons' | 'fa5' | 'mci';
+  icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle?: string;
   badge?: string;
@@ -20,7 +19,6 @@ export interface ProfileMenuItemProps {
 
 export default function ProfileMenuItem({
   icon,
-  iconType = 'ionicons',
   title,
   subtitle,
   badge,
@@ -39,27 +37,11 @@ export default function ProfileMenuItem({
           isDestructive ? styles.destructiveIconBg : styles.defaultIconBg,
         ]}
       >
-        {iconType === 'ionicons' && (
-          <Ionicons
-            name={icon}
-            size={20}
-            color={isDestructive ? Colors.logoutRed : Colors.primary}
-          />
-        )}
-        {iconType === 'fa5' && (
-          <FontAwesome5
-            name={icon}
-            size={18}
-            color={isDestructive ? Colors.logoutRed : Colors.primary}
-          />
-        )}
-        {iconType === 'mci' && (
-          <MaterialCommunityIcons
-            name={icon}
-            size={20}
-            color={isDestructive ? Colors.logoutRed : Colors.primary}
-          />
-        )}
+        <Ionicons
+          name={icon}
+          size={20}
+          color={isDestructive ? Colors.logoutRed : Colors.primary}
+        />
       </View>
 
       <View style={styles.menuTextContainer}>
@@ -105,10 +87,10 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   defaultIconBg: {
-    backgroundColor: '#E8F7F5',
+    backgroundColor: Colors.accentLight,
   },
   destructiveIconBg: {
-    backgroundColor: '#FEECEE',
+    backgroundColor: Colors.redBg,
   },
   menuTextContainer: {
     flex: 1,
@@ -116,10 +98,10 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1E293B',
+    color: Colors.textSlateDark,
   },
   destructiveMenuTitle: {
-    color: '#EF4444',
+    color: Colors.logoutRed,
   },
   menuSubtitle: {
     fontSize: 12,

@@ -1,3 +1,5 @@
+import { Colors } from './Colors';
+
 export interface BookingDateItem {
   day: string;
   date: string;
@@ -107,9 +109,7 @@ export interface EmergencyHotline {
 }
 
 export const EMERGENCY_HOTLINES: EmergencyHotline[] = [
-  { number: '108', label: 'Ambulance 108', subtitle: 'National Medical SOS', color: '#DC2626', icon: 'medical' },
-  { number: '104', label: 'Health Helpline 104', subtitle: '24/7 Medical Advice', color: '#0D9488', icon: 'call' },
-  { number: '1066', label: 'Apollo SOS 1066', subtitle: 'Hospital Emergency', color: '#7C3AED', icon: 'heart' },
+  { number: '108', label: 'Ambulance 108', subtitle: 'National Medical SOS (24/7 Toll-Free)', color: Colors.logoutRed, icon: 'medical' },
 ];
 
 export const MEDICINE_CATEGORIES = [
@@ -130,4 +130,32 @@ export const CANCEL_REASONS = [
   'Schedule conflict / Change of plan',
   'High consultation / procedure fee',
   'Other reason',
+];
+
+export interface SocialLoginOption {
+  id: 'google' | 'apple' | 'facebook';
+  title: string;
+  iconName: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  color: string;
+}
+
+export const SOCIAL_LOGIN_OPTIONS: SocialLoginOption[] = [
+  {
+    id: 'google',
+    title: 'Sign in with Google',
+    iconName: 'logo-google',
+    color: Colors.googleRed,
+  },
+  {
+    id: 'apple',
+    title: 'Sign in with Apple',
+    iconName: 'logo-apple',
+    color: Colors.black,
+  },
+  {
+    id: 'facebook',
+    title: 'Sign in with Facebook',
+    iconName: 'logo-facebook',
+    color: Colors.facebookBlue,
+  },
 ];

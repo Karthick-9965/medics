@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TextInput, TextInputProps, TouchableOpacity, Text } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
 export interface InputFieldProps extends TextInputProps {
   label?: string;
-  icon?: keyof typeof Feather.glyphMap | keyof typeof Ionicons.glyphMap | string;
+  icon?: keyof typeof Ionicons.glyphMap | string;
   leftIcon?: keyof typeof Ionicons.glyphMap | string;
   rightIcon?: keyof typeof Ionicons.glyphMap | string;
   rightIconColor?: string;
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   borderError: {
     borderColor: Colors.error,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.dangerBgLight,
   },
   icon: {
     marginRight: 10,

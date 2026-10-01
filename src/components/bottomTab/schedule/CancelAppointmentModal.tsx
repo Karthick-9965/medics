@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { AppointmentItem } from './AppointmentCard';
@@ -21,6 +22,7 @@ export default function CancelAppointmentModal({
   onCancelled,
   onConfirm,
 }: CancelAppointmentModalProps) {
+  const insets = useSafeAreaInsets();
   const [selectedReason, setSelectedReason] = useState(CANCEL_REASONS[0]);
 
   if (!appointment) return null;
@@ -32,9 +34,16 @@ export default function CancelAppointmentModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ModalHeader title="Cancel Appointment" subtitle={appointment.doctorName} onClose={onClose} />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
             <Text style={styles.heading}>Please select a cancellation reason:</Text>
@@ -73,7 +82,7 @@ export default function CancelAppointmentModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {
@@ -100,7 +109,7 @@ const styles = StyleSheet.create({
   },
   reasonRowSelected: {
     borderColor: Colors.error,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.dangerBgLight,
   },
   reasonText: {
     fontSize: 13,

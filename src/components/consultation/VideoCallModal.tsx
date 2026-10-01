@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Modal, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
+import { useCallTimer } from '../../hooks/useCallTimer';
 
 export interface VideoCallModalProps {
   visible: boolean;
@@ -12,28 +13,11 @@ export interface VideoCallModalProps {
 }
 
 export default function VideoCallModal({ visible, doctor, onEndCall, onClose, onSwitchToAudio }: VideoCallModalProps) {
-  const [seconds, setSeconds] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
-
-  useEffect(() => {
-    let timer: any = null;
-    if (visible && doctor) {
-      setSeconds(0);
-      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [visible, doctor]);
+  const { formattedTime } = useCallTimer(visible && !!doctor);
 
   if (!doctor) return null;
-
-  const formatTimer = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const remainder = s % 60;
-    return `${mins.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
-  };
 
   const handleEnd = () => {
     if (onEndCall) onEndCall();
@@ -52,7 +36,7 @@ export default function VideoCallModal({ visible, doctor, onEndCall, onClose, on
               <Text style={styles.docSpec}>{doctor.specialization}</Text>
               <View style={styles.timerBadge}>
                 <View style={styles.liveDot} />
-                <Text style={styles.timerText}>{formatTimer(seconds)}</Text>
+                <Text style={styles.timerText}>{formattedTime}</Text>
               </View>
             </View>
           </View>
@@ -98,7 +82,7 @@ export default function VideoCallModal({ visible, doctor, onEndCall, onClose, on
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: Colors.textSlateDark,
   },
   mainVideo: {
     flex: 1,
@@ -128,7 +112,7 @@ const styles = StyleSheet.create({
   },
   docSpec: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: Colors.borderMedium,
     marginTop: 2,
   },
   timerBadge: {
@@ -141,7 +125,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#16A34A',
+    backgroundColor: Colors.successGreen,
   },
   timerText: {
     color: Colors.white,

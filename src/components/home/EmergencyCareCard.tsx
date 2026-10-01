@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 
-const ambulanceImage = require('../../assets/images/home/emergency/ambulance.png');
+const ambulanceImage = require('../../assets/images/emergency/ambulance.png');
 
 interface EmergencyCareCardProps {
   onGetHelpPress?: () => void;
@@ -47,16 +47,21 @@ export default function EmergencyCareCard({ onGetHelpPress }: EmergencyCareCardP
 const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 0,
   },
   card: {
-    backgroundColor: '#FFF2F2',
+    backgroundColor: Colors.redBg,
     borderWidth: 1,
-    borderColor: '#FFE2E2',
+    borderColor: Colors.dangerBorder,
     borderRadius: 16,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: Colors.error,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   ambulanceImage: {
     width: 85,

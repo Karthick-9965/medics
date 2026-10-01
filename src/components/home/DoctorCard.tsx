@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
+import RatingBadge from '../common/RatingBadge';
+import DistanceBadge from '../common/DistanceBadge';
 
 export interface DoctorCardProps {
   name: string;
@@ -28,14 +29,8 @@ export default function DoctorCard({
       <Text style={styles.name} numberOfLines={1}>{name}</Text>
       <Text style={styles.specialization} numberOfLines={1}>{specialization}</Text>
       <View style={styles.bottomRow}>
-        <View style={styles.ratingBadge}>
-          <Ionicons name="star" size={9.5} color={Colors.primary} />
-          <Text style={styles.ratingText}>{rating}</Text>
-        </View>
-        <View style={styles.distanceBadge}>
-          <Ionicons name="location-sharp" size={9.5} color={Colors.secondary} />
-          <Text style={styles.distanceText} numberOfLines={1}>{distance}</Text>
-        </View>
+        <RatingBadge rating={rating} />
+        <DistanceBadge distance={distance} />
       </View>
     </TouchableOpacity>
   );
@@ -51,7 +46,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginRight: 10,
-    shadowColor: '#000',
+    shadowColor: Colors.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
@@ -90,28 +85,5 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 6,
   },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: 5,
-    paddingVertical: 2.5,
-    borderRadius: 5,
-  },
-  ratingText: {
-    fontSize: 9.5,
-    fontWeight: '700',
-    color: Colors.primary,
-    marginLeft: 2.5,
-  },
-  distanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  distanceText: {
-    fontSize: 9.5,
-    color: Colors.secondary,
-    marginLeft: 2,
-    maxWidth: 55,
-  },
 });
+

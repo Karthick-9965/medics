@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View, Text, Modal, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
+import { useCallTimer } from '../../hooks/useCallTimer';
 
 export interface AudioCallModalProps {
   visible: boolean;
@@ -12,28 +13,11 @@ export interface AudioCallModalProps {
 }
 
 export default function AudioCallModal({ visible, doctor, onEndCall, onClose, onSwitchToVideo }: AudioCallModalProps) {
-  const [seconds, setSeconds] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(true);
-
-  useEffect(() => {
-    let timer: any = null;
-    if (visible && doctor) {
-      setSeconds(0);
-      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [visible, doctor]);
+  const { formattedTime } = useCallTimer(visible && !!doctor);
 
   if (!doctor) return null;
-
-  const formatTimer = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const remainder = s % 60;
-    return `${mins.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
-  };
 
   const handleEnd = () => {
     if (onEndCall) onEndCall();
@@ -47,7 +31,7 @@ export default function AudioCallModal({ visible, doctor, onEndCall, onClose, on
           <Image source={doctor.image || doctor.avatar} style={styles.avatar} />
           <Text style={styles.docName}>{doctor.name}</Text>
           <Text style={styles.docSpec}>{doctor.specialization}</Text>
-          <Text style={styles.timer}>{formatTimer(seconds)}</Text>
+          <Text style={styles.timer}>{formattedTime}</Text>
         </View>
 
         {/* Call Controls */}

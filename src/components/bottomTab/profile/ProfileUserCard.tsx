@@ -31,7 +31,12 @@ export default function ProfileUserCard({
           activeOpacity={0.8}
         >
           {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+            <Image
+              key={avatarUri}
+              source={{ uri: avatarUri }}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
           ) : (
             <View style={styles.avatarCircle}>
               <Ionicons name="person" size={40} color={Colors.primary} />

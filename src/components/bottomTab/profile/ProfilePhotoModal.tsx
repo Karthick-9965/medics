@@ -1,9 +1,10 @@
-import React from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, Image, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../../constants/Colors';
-import ModalHeader from '../../common/ModalHeader';
+import MedicalAlertModal, { MedicalAlertType } from '../../modals/MedicalAlertModal';
 
 interface ProfilePhotoModalProps {
   visible: boolean;
@@ -22,25 +23,65 @@ export default function ProfilePhotoModal({
   onAvatarPicked,
   onClose,
 }: ProfilePhotoModalProps) {
+  const insets = useSafeAreaInsets();
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    type?: MedicalAlertType;
+    icon?: keyof typeof Ionicons.glyphMap;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  useEffect(() => {
+    if (visible) {
+      setPendingPhotoUri(null);
+    }
+  }, [visible]);
+
   const handleGallery = async () => {
     try {
-      const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!res.granted) {
-        Alert.alert('Permission', 'Gallery permission required.');
-        return;
-      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.85,
+        allowsEditing: false, // Directly select without buggy crop screen
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        onAvatarPicked(result.assets[0].uri);
+        const pickedUri = result.assets[0].uri;
+        onAvatarPicked(pickedUri);
         onClose();
       }
     } catch (e) {
-      console.log(e);
+      console.log('Direct gallery launch failed, trying with permission:', e);
+      try {
+        const res = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (res.granted) {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+            allowsEditing: false,
+          });
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+            const pickedUri = result.assets[0].uri;
+            onAvatarPicked(pickedUri);
+            onClose();
+          }
+        } else {
+          setAlertConfig({
+            visible: true,
+            type: 'warning',
+            icon: 'images-outline',
+            title: 'Gallery Permission Required',
+            message: 'Please allow photo gallery access in your device settings to select your profile picture.',
+          });
+        }
+      } catch (err) {
+        console.log('Gallery error:', err);
+      }
     }
   };
 
@@ -48,20 +89,33 @@ export default function ProfilePhotoModal({
     try {
       const res = await ImagePicker.requestCameraPermissionsAsync();
       if (!res.granted) {
-        Alert.alert('Permission', 'Camera permission required.');
+        setAlertConfig({
+          visible: true,
+          type: 'warning',
+          icon: 'camera-outline',
+          title: 'Camera Permission Required',
+          message: 'Please allow camera access in your device settings to capture your profile picture.',
+        });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.85,
+        allowsEditing: false, // Directly capture without buggy crop screen
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        onAvatarPicked(result.assets[0].uri);
+        const pickedUri = result.assets[0].uri;
+        onAvatarPicked(pickedUri);
         onClose();
       }
     } catch (e) {
-      console.log(e);
+      console.log('Camera error:', e);
+      setAlertConfig({
+        visible: true,
+        type: 'info',
+        icon: 'camera-outline',
+        title: 'Camera Unavailable',
+        message: 'Camera could not be opened. If you are using a simulator or emulator, please use "Choose from Gallery".',
+      });
     }
   };
 
@@ -75,10 +129,12 @@ export default function ProfilePhotoModal({
       visible={visible}
       transparent
       animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.sheetContainer}>
+        <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           {/* Drag Indicator */}
           <View style={styles.indicatorWrap}>
             <View style={styles.indicator} />
@@ -101,7 +157,12 @@ export default function ProfilePhotoModal({
           <View style={styles.previewSection}>
             <View style={styles.avatarWrapper}>
               {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                <Image
+                  key={avatarUri}
+                  source={{ uri: avatarUri }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
               ) : (
                 <View style={styles.avatarCircle}>
                   <Ionicons name="person" size={36} color={Colors.primary} />
@@ -136,8 +197,8 @@ export default function ProfilePhotoModal({
               onPress={handleCamera}
               activeOpacity={0.7}
             >
-              <View style={[styles.optionIconCircle, { backgroundColor: '#EBF3FF' }]}>
-                <Ionicons name="camera-outline" size={22} color="#2F80ED" />
+              <View style={[styles.optionIconCircle, { backgroundColor: Colors.infoBlueLight }]}>
+                <Ionicons name="camera-outline" size={22} color={Colors.infoBlue} />
               </View>
               <View style={styles.optionTextWrap}>
                 <Text style={styles.optionTitle}>Take Photo</Text>
@@ -153,16 +214,16 @@ export default function ProfilePhotoModal({
                 onPress={handleRemove}
                 activeOpacity={0.7}
               >
-                <View style={[styles.optionIconCircle, { backgroundColor: Colors.redBg || '#FFF5F5' }]}>
-                  <Ionicons name="trash-outline" size={20} color={Colors.logoutRed || '#E53E3E'} />
+                <View style={[styles.optionIconCircle, { backgroundColor: Colors.redBg }]}>
+                  <Ionicons name="trash-outline" size={20} color={Colors.logoutRed} />
                 </View>
                 <View style={styles.optionTextWrap}>
-                  <Text style={[styles.optionTitle, { color: Colors.logoutRed || '#E53E3E' }]}>
+                  <Text style={[styles.optionTitle, { color: Colors.logoutRed }]}>
                     Remove Current Photo
                   </Text>
                   <Text style={styles.optionSubtitle}>Reset to default profile avatar</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.logoutRed || '#E53E3E'} />
+                <Ionicons name="chevron-forward" size={18} color={Colors.logoutRed} />
               </TouchableOpacity>
             )}
           </View>
@@ -177,6 +238,17 @@ export default function ProfilePhotoModal({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Project Themed Medical Alert Modal */}
+      <MedicalAlertModal
+        visible={alertConfig.visible}
+        type={alertConfig.type}
+        icon={alertConfig.icon}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onPrimaryPress={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
+      />
     </Modal>
   );
 }
@@ -184,7 +256,7 @@ export default function ProfilePhotoModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 59, 50, 0.45)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   sheetContainer: {
@@ -209,7 +281,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: Colors.borderMedium,
   },
   headerRow: {
     flexDirection: 'row',
@@ -289,8 +361,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   removeOptionCard: {
-    borderColor: '#FFD7D7',
-    backgroundColor: '#FFF8F8',
+    borderColor: Colors.dangerBorder,
+    backgroundColor: Colors.dangerBgLight,
     borderWidth: 1,
   },
   optionIconCircle: {

@@ -21,7 +21,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
   {
     id: '1',
     name: 'Apollo Speciality Hospital',
-    image: require('../assets/images/home/hospitals/apollo.png'),
+    image: require('../assets/images/hospitals/apollo.png'),
     rating: '4.9',
     distance: '2.4 km away',
     address: '21 Greams Lane, Medical District',
@@ -39,7 +39,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
   {
     id: '2',
     name: 'Grace Memorial Hospital',
-    image: require('../assets/images/home/hospitals/grace-memorial.png'),
+    image: require('../assets/images/hospitals/grace-memorial.png'),
     rating: '4.8',
     distance: '3.8 km away',
     address: '500 Memorial Boulevard, North Sector',
@@ -57,7 +57,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
   {
     id: '3',
     name: 'City Care Medical Center',
-    image: require('../assets/images/home/hospitals/city-care.png'),
+    image: require('../assets/images/hospitals/city-care.png'),
     rating: '4.7',
     distance: '1.1 km away',
     address: '88 City Center Cross, Downtown',
@@ -75,7 +75,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
   {
     id: '4',
     name: 'Metro Health Super Specialty',
-    image: require('../assets/images/home/hospitals/metro-health.png'),
+    image: require('../assets/images/hospitals/metro-health.png'),
     rating: '4.9',
     distance: '4.5 km away',
     address: '102 Metro Ring Road, South Zone',
@@ -93,7 +93,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
   {
     id: '5',
     name: 'Sunrise Community Hospital',
-    image: require('../assets/images/home/hospitals/sunrise.png'),
+    image: require('../assets/images/hospitals/sunrise.png'),
     rating: '4.6',
     distance: '5.2 km away',
     address: '14 Sunrise Avenue, East Bay',

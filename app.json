@@ -21,8 +21,24 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ],
+      "package": "com.karthick18.telemedicineapp"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Medics to access your photos to set your profile picture and upload prescriptions.",
+          "cameraPermission": "Allow Medics to access your camera to take profile photos and prescription pictures."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./src/assets/favicon.png"
     },

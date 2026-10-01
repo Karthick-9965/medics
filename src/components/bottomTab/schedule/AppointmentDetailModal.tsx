@@ -1,11 +1,17 @@
-import React from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { AppointmentItem } from './AppointmentCard';
-import { getDoctorAvatar } from '../../../constants/scheduleData';
 import ModalHeader from '../../common/ModalHeader';
 import PriceSummary from '../../common/PriceSummary';
+import MedicalAlertModal from '../../modals/MedicalAlertModal';
+import AppointmentDoctorHeader from './AppointmentDoctorHeader';
+import AppointmentScheduleGrid from './AppointmentScheduleGrid';
+import DigitalPrescriptionCard from './DigitalPrescriptionCard';
+import { sendAppointmentReminderNotification } from '../../../services/notificationManager';
+import { useMedicalAlert } from '../../../hooks/useMedicalAlert';
 
 interface AppointmentDetailModalProps {
   visible: boolean;
@@ -19,6 +25,10 @@ interface AppointmentDetailModalProps {
   onDelete?: (id: string) => void;
 }
 
+/**
+ * AppointmentDetailModal displays full appointment breakdown,
+ * including doctor profile, schedule grid, patient data, prescription, and action buttons.
+ */
 export default function AppointmentDetailModal({
   visible,
   appointment,
@@ -30,101 +40,94 @@ export default function AppointmentDetailModal({
   onJoinCall,
   onDelete,
 }: AppointmentDetailModalProps) {
+  const insets = useSafeAreaInsets();
+  const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
+
   if (!appointment) return null;
 
   const isUpcoming = appointment.status === 'upcoming';
   const isCompleted = appointment.status === 'completed';
   const isCanceled = appointment.status === 'canceled';
 
+  const handleDownloadInvoice = () => {
+    showAlert({
+      type: 'receipt',
+      title: 'Invoice Downloaded',
+      message: 'Receipt and tax invoice have been downloaded to your documents.',
+    });
+  };
+
+  const handleSetReminder = async () => {
+    await sendAppointmentReminderNotification({
+      doctorName: appointment.doctorName,
+      date: appointment.date,
+      time: appointment.time,
+      bookingId: appointment.bookingId,
+      consultationType: appointment.consultationType,
+    });
+    showAlert({
+      type: 'reminder',
+      icon: 'notifications',
+      title: 'Reminder Set',
+      message: `Appointment reminder scheduled for ${appointment.doctorName} on ${appointment.date} at ${appointment.time}.`,
+    });
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ModalHeader
             title="Appointment Details"
             subtitle={appointment.bookingId || '#MED-APPT'}
             onClose={onClose}
             rightAction={{
               icon: 'receipt-outline',
-              onPress: () => Alert.alert('Invoice Downloaded', 'Receipt downloaded to documents.'),
+              onPress: handleDownloadInvoice,
               color: Colors.primary,
             }}
           />
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Doctor Info Card */}
-            <View style={styles.docCard}>
-              <Image
-                source={
-                  typeof appointment.avatar === 'number' || (appointment.avatar && typeof appointment.avatar === 'object' && 'uri' in appointment.avatar)
-                    ? appointment.avatar
-                    : getDoctorAvatar(appointment.doctorName, appointment.avatar)
-                }
-                style={styles.avatar}
-                resizeMode="cover"
-              />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.docName}>{appointment.doctorName}</Text>
-                <Text style={styles.docSpec}>{appointment.specialization}</Text>
-                <Text style={styles.hospitalName}>{appointment.hospitalName || 'City Care Hospital'}</Text>
-              </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  isUpcoming ? styles.badgeUpcoming : isCompleted ? styles.badgeCompleted : styles.badgeCanceled,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusText,
-                    isUpcoming ? styles.textUpcoming : isCompleted ? styles.textCompleted : styles.textCanceled,
-                  ]}
-                >
-                  {isCanceled ? 'Canceled' : appointment.statusLabel || appointment.status}
-                </Text>
-              </View>
-            </View>
+            {/* Doctor Info Header */}
+            <AppointmentDoctorHeader
+              doctorName={appointment.doctorName}
+              specialization={appointment.specialization}
+              hospitalName={appointment.hospitalName}
+              avatar={appointment.avatar}
+              status={appointment.status as 'upcoming' | 'completed' | 'canceled'}
+              statusLabel={appointment.statusLabel}
+            />
 
-            {/* Schedule Details Row */}
-            <View style={styles.infoRow}>
-              <View style={styles.infoBox}>
-                <Ionicons name="calendar-outline" size={18} color={Colors.primary} />
-                <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>{appointment.date}</Text>
-              </View>
-              <View style={styles.infoBox}>
-                <Ionicons name="time-outline" size={18} color={Colors.primary} />
-                <Text style={styles.infoLabel}>Time</Text>
-                <Text style={styles.infoValue}>{appointment.time}</Text>
-              </View>
-              <View style={styles.infoBox}>
-                <Ionicons name="videocam-outline" size={18} color={Colors.primary} />
-                <Text style={styles.infoLabel}>Type</Text>
-                <Text style={styles.infoValue}>{appointment.consultationType || 'Video Call'}</Text>
-              </View>
-            </View>
+            {/* Schedule Details Grid */}
+            <AppointmentScheduleGrid
+              date={appointment.date}
+              time={appointment.time}
+              consultationType={appointment.consultationType}
+            />
 
-            {/* Patient Details */}
-            <View style={styles.section}>
+            {/* Patient Information Section */}
+            <View style={styles.patientSection}>
               <Text style={styles.sectionTitle}>Patient Information</Text>
               <Text style={styles.patientText}>
-                {appointment.patientName || 'Patient'} • {appointment.patientAge || '28 yrs'} • {appointment.patientGender || 'Male'}
+                {appointment.patientName || 'Patient'} • {appointment.patientAge || '28 yrs'} •{' '}
+                {appointment.patientGender || 'Male'}
               </Text>
-              <Text style={styles.concernText}>Concern: {appointment.problemDescription || 'General health consultation'}</Text>
+              <Text style={styles.concernText}>
+                Concern: {appointment.problemDescription || 'General health consultation'}
+              </Text>
             </View>
 
-            {/* Prescriptions (for completed) */}
+            {/* Digital Prescription (for completed appointments) */}
             {isCompleted && appointment.prescriptions && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Digital Prescription</Text>
-                {appointment.prescriptions.map((p, idx) => (
-                  <View key={idx} style={styles.prescRow}>
-                    <Ionicons name="medkit" size={16} color={Colors.primary} />
-                    <Text style={styles.prescMed}>{p.medicine}</Text>
-                    <Text style={styles.prescDosage}>{p.dosage} • {p.duration}</Text>
-                  </View>
-                ))}
-              </View>
+              <DigitalPrescriptionCard prescriptions={appointment.prescriptions} />
             )}
 
             {/* Bill Summary */}
@@ -132,7 +135,11 @@ export default function AppointmentDetailModal({
               title="Payment Summary"
               items={[
                 { label: 'Consultation Fee', amount: appointment.fee || '$47.00' },
-                { label: 'Payment Status', amount: appointment.paymentStatus || 'Paid (Online)', isHighlight: true },
+                {
+                  label: 'Payment Status',
+                  amount: appointment.paymentStatus || 'Paid (Online)',
+                  isHighlight: true,
+                },
               ]}
               totalAmount={appointment.fee || '$47.00'}
             />
@@ -143,25 +150,36 @@ export default function AppointmentDetailModal({
             {isUpcoming && (
               <View style={styles.btnGroup}>
                 <TouchableOpacity
-                  style={styles.joinCallBtn}
+                  style={styles.primaryActionBtn}
                   onPress={() => onJoinCall && onJoinCall(appointment)}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="videocam" size={18} color={Colors.white} />
-                  <Text style={styles.joinCallText}>Start Video Consultation</Text>
+                  <Text style={styles.primaryActionText}>Start Video Consultation</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.reminderBtn}
+                  onPress={handleSetReminder}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="notifications-outline" size={17} color={Colors.primary} />
+                  <Text style={styles.reminderBtnText}>Set Appointment Reminder</Text>
+                </TouchableOpacity>
+
                 <View style={styles.dualRow}>
                   <TouchableOpacity
-                    style={styles.actionBtnSecondary}
+                    style={styles.secondaryBtn}
                     onPress={() => onReschedule && onReschedule(appointment.id)}
                   >
-                    <Text style={styles.actionTextSecondary}>Reschedule</Text>
+                    <Text style={styles.secondaryBtnText}>Reschedule</Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={[styles.actionBtnSecondary, { borderColor: Colors.error }]}
+                    style={[styles.secondaryBtn, styles.dangerBorder]}
                     onPress={() => onCancel && onCancel(appointment.id)}
                   >
-                    <Text style={[styles.actionTextSecondary, { color: Colors.error }]}>Cancel</Text>
+                    <Text style={[styles.secondaryBtnText, styles.dangerText]}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -170,17 +188,18 @@ export default function AppointmentDetailModal({
             {isCompleted && (
               <View style={styles.dualRow}>
                 <TouchableOpacity
-                  style={styles.actionBtnSecondary}
+                  style={styles.secondaryBtn}
                   onPress={() => onReview && onReview(appointment.id)}
                 >
-                  <Ionicons name="star-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.actionTextSecondary}>Review</Text>
+                  <Ionicons name="star-outline" size={16} color={Colors.starGoldDark} />
+                  <Text style={styles.secondaryBtnText}>Review</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={[styles.joinCallBtn, { flex: 1.5 }]}
+                  style={[styles.primaryActionBtn, { flex: 1.5 }]}
                   onPress={() => onRebook && onRebook(appointment.id)}
                 >
-                  <Text style={styles.joinCallText}>Re-Book Doctor</Text>
+                  <Text style={styles.primaryActionText}>Re-Book Doctor</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -188,23 +207,35 @@ export default function AppointmentDetailModal({
             {isCanceled && (
               <View style={styles.dualRow}>
                 <TouchableOpacity
-                  style={[styles.actionBtnSecondary, { borderColor: Colors.error, flex: 1 }]}
+                  style={[styles.secondaryBtn, styles.dangerBorder, { flex: 1 }]}
                   onPress={() => onDelete && onDelete(appointment.id)}
                 >
-                  <Ionicons name="trash-outline" size={16} color={Colors.error} />
-                  <Text style={[styles.actionTextSecondary, { color: Colors.error }]}>Delete Record</Text>
+                  <Ionicons name="trash-outline" size={16} color={Colors.dangerRed} />
+                  <Text style={[styles.secondaryBtnText, styles.dangerText]}>Delete Record</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={[styles.joinCallBtn, { flex: 1.5 }]}
+                  style={[styles.primaryActionBtn, { flex: 1.5 }]}
                   onPress={() => onRebook && onRebook(appointment.id)}
                 >
-                  <Text style={styles.joinCallText}>Book Again</Text>
+                  <Text style={styles.primaryActionText}>Book Again</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         </View>
       </View>
+
+      {/* Project-Themed MedicalAlertModal */}
+      <MedicalAlertModal
+        visible={alertConfig.visible}
+        type={alertConfig.type}
+        icon={alertConfig.icon}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        onPrimaryPress={closeAlert}
+        onClose={closeAlert}
+      />
     </Modal>
   );
 }
@@ -212,7 +243,7 @@ export default function AppointmentDetailModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {
@@ -224,119 +255,41 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  docCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
+  patientSection: {
+    padding: 14,
     borderRadius: 14,
     backgroundColor: Colors.bgLight,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
     marginBottom: 12,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  docName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  docSpec: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  hospitalName: {
-    fontSize: 11,
-    color: Colors.secondary,
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  badgeUpcoming: { backgroundColor: Colors.accentLight },
-  badgeCompleted: { backgroundColor: '#DCFCE7' },
-  badgeCanceled: { backgroundColor: '#FEE2E2' },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  textUpcoming: { color: Colors.primary },
-  textCompleted: { color: '#16A34A' },
-  textCanceled: { color: Colors.error },
-  infoRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  infoBox: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: Colors.bgLight,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  infoLabel: {
-    fontSize: 10,
-    color: Colors.secondary,
-    marginTop: 4,
-  },
-  infoValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textDark,
-    marginTop: 2,
-  },
-  section: {
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: Colors.bgLight,
-    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.secondary,
-    marginBottom: 4,
+    color: Colors.textSlateMedium,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
   },
   patientText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: Colors.textDark,
+    color: Colors.textSlateDark,
   },
   concernText: {
     fontSize: 12,
-    color: Colors.secondary,
-    marginTop: 2,
-  },
-  prescRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 6,
-  },
-  prescMed: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textDark,
-  },
-  prescDosage: {
-    fontSize: 12,
-    color: Colors.secondary,
+    color: Colors.textMuted,
+    marginTop: 3,
   },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: Colors.borderLight,
   },
   btnGroup: {
     gap: 8,
   },
-  joinCallBtn: {
+  primaryActionBtn: {
     backgroundColor: Colors.primary,
     height: 46,
     borderRadius: 12,
@@ -345,29 +298,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  joinCallText: {
+  primaryActionText: {
     color: Colors.white,
     fontWeight: '700',
     fontSize: 13,
+  },
+  reminderBtn: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.tealBg,
+  },
+  reminderBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   dualRow: {
     flexDirection: 'row',
     gap: 10,
   },
-  actionBtnSecondary: {
+  secondaryBtn: {
     flex: 1,
     height: 44,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: Colors.borderMedium,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    backgroundColor: Colors.white,
   },
-  actionTextSecondary: {
+  secondaryBtnText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.textDark,
+    color: Colors.textSlateDark,
+  },
+  dangerBorder: {
+    borderColor: Colors.dangerBorder,
+    backgroundColor: Colors.dangerBgLight,
+  },
+  dangerText: {
+    color: Colors.dangerRed,
   },
 });

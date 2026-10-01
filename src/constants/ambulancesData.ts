@@ -1,4 +1,5 @@
 import { EMERGENCY_HOTLINES } from './appData';
+import { Colors } from './Colors';
 export { EMERGENCY_HOTLINES };
 
 export interface AmbulanceType {
@@ -119,7 +120,7 @@ export const HOSPITAL_AMBULANCE_NUMBERS: HospitalAmbulanceNumber[] = [
     distance: '2.4 km away',
     eta: '4-6 mins',
     availableUnits: 3,
-    badgeColor: '#7C3AED',
+    badgeColor: Colors.darkTeal,
   },
   {
     id: 'hosp_amb_2',
@@ -130,7 +131,7 @@ export const HOSPITAL_AMBULANCE_NUMBERS: HospitalAmbulanceNumber[] = [
     distance: '3.8 km away',
     eta: '5-8 mins',
     availableUnits: 2,
-    badgeColor: '#DC2626',
+    badgeColor: Colors.darkTeal,
   },
   {
     id: 'hosp_amb_3',
@@ -141,7 +142,7 @@ export const HOSPITAL_AMBULANCE_NUMBERS: HospitalAmbulanceNumber[] = [
     distance: '1.1 km away',
     eta: '3-5 mins',
     availableUnits: 4,
-    badgeColor: '#0D9488',
+    badgeColor: Colors.darkTeal,
   },
   {
     id: 'hosp_amb_4',
@@ -152,7 +153,7 @@ export const HOSPITAL_AMBULANCE_NUMBERS: HospitalAmbulanceNumber[] = [
     distance: '4.5 km away',
     eta: '6-9 mins',
     availableUnits: 2,
-    badgeColor: '#2563EB',
+    badgeColor: Colors.darkTeal,
   },
   {
     id: 'hosp_amb_5',
@@ -163,6 +164,6 @@ export const HOSPITAL_AMBULANCE_NUMBERS: HospitalAmbulanceNumber[] = [
     distance: '5.2 km away',
     eta: '7-10 mins',
     availableUnits: 1,
-    badgeColor: '#EA580C',
+    badgeColor: Colors.darkTeal,
   },
 ];

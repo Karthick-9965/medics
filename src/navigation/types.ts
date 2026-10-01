@@ -7,6 +7,7 @@ export type MainTabParamList = {
   HomeTab: { userName?: string; userEmail?: string } | undefined;
   MessagesTab: undefined;
   ScheduleTab: undefined;
+  NotificationsTab: undefined;
   ProfileTab: undefined;
 };
 

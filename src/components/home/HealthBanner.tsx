@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { Colors } from '../../constants/Colors';
 
-const bannerDoctor = require('../../assets/images/home/banner-doctor.png');
+const bannerDoctor = require('../../assets/images/banners/banner-doctor.png');
 
 export default function HealthBanner() {
   return (
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   container: {
-    backgroundColor: '#E8F6F4',
+    backgroundColor: Colors.accentLight,
     borderRadius: 16,
     height: 135,
     flexDirection: 'row',

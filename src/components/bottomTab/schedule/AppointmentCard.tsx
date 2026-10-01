@@ -36,7 +36,6 @@ export interface AppointmentCardProps {
   onReschedule?: (id: string) => void;
   onRebook?: (id: string) => void;
   onReview?: (id: string) => void;
-  onJoinCall?: (appointment: AppointmentItem) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -47,7 +46,6 @@ export default function AppointmentCard({
   onReschedule,
   onRebook,
   onReview,
-  onJoinCall,
   onDelete,
 }: AppointmentCardProps) {
   return (
@@ -59,11 +57,7 @@ export default function AppointmentCard({
       {/* Top: Doctor Info */}
       <View style={styles.doctorRow}>
         <Image
-          source={
-            typeof appointment.avatar === 'number' || (appointment.avatar && typeof appointment.avatar === 'object' && 'uri' in appointment.avatar)
-              ? appointment.avatar
-              : getDoctorAvatar(appointment.doctorName, appointment.avatar)
-          }
+          source={getDoctorAvatar(appointment.doctorName, appointment.avatar)}
           style={styles.doctorAvatar}
           resizeMode="cover"
         />
@@ -71,7 +65,7 @@ export default function AppointmentCard({
           <Text style={styles.doctorName}>{appointment.doctorName}</Text>
           <Text style={styles.doctorSpecialty}>{appointment.specialization}</Text>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color="#FFD700" />
+            <Ionicons name="star" size={14} color={Colors.starGold} />
             <Text style={styles.ratingText}>{appointment.rating}</Text>
           </View>
         </View>
@@ -147,7 +141,7 @@ export default function AppointmentCard({
               onPress={() => onReview?.(appointment.id)}
               activeOpacity={0.7}
             >
-              <Ionicons name="star-outline" size={16} color="#E09200" />
+              <Ionicons name="star-outline" size={16} color={Colors.starGoldDark} />
               <Text style={styles.reviewButtonText}>Leave Review</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -272,7 +266,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dotUpcoming: {
-    backgroundColor: '#34C759',
+    backgroundColor: Colors.successGreen,
   },
   dotCompleted: {
     backgroundColor: Colors.primary,
@@ -304,7 +298,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: Colors.dangerBorder,
   },
   cancelButtonText: {
     fontSize: 13,
@@ -316,12 +310,12 @@ const styles = StyleSheet.create({
     height: 42,
     flexDirection: 'row',
     borderRadius: 21,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.dangerBgLight,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: Colors.dangerBorder,
   },
   deleteButtonText: {
     fontSize: 13,
@@ -333,17 +327,17 @@ const styles = StyleSheet.create({
     height: 42,
     flexDirection: 'row',
     borderRadius: 21,
-    backgroundColor: '#FFF8E6',
+    backgroundColor: Colors.warningBgLight,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#FFE2A6',
+    borderColor: Colors.warningDark + '33',
   },
   reviewButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#B57400',
+    color: Colors.warningDark,
   },
   rescheduleButton: {
     flex: 1,

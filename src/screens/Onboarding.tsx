@@ -6,12 +6,9 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
- 
-const { width, height } = Dimensions.get('window');
  
 interface OnboardingProps {
   onFinish: () => void;
@@ -21,17 +18,17 @@ const ONBOARDING_DATA = [
   {
     id: '1',
     title: 'Consult only with a doctor you trust',
-    image: require('../assets/doctor1.png'),
+    image: require('../assets/images/onboarding/onboarding-1.png'),
   },
   {
     id: '2',
     title: 'Find a lot of specialist doctors in one place',
-    image: require('../assets/doctor2.png'),
+    image: require('../assets/images/onboarding/onboarding-2.png'),
   },
   {
     id: '3',
     title: 'Get connect our Online Consultation',
-    image: require('../assets/doctor3.png'),
+    image: require('../assets/images/onboarding/onboarding-3.png'),
   },
 ];
  
@@ -63,7 +60,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
         <Image
           source={currentData.image}
           style={styles.image}
-          resizeMode="contain"
+          resizeMode="cover"
         />
       </View>
  
@@ -89,7 +86,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
  
           {/* Next Button */}
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Ionicons name="arrow-forward" size={24} color="#ffffff" />
+            <Ionicons name="arrow-forward" size={24} color={Colors.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -119,19 +116,21 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 10,
+    width: '100%',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    backgroundColor: Colors.bgLight,
   },
   image: {
-    width: width * 0.85,
-    height: height * 0.45,
+    width: '100%',
+    height: '100%',
   },
   card: {
     backgroundColor: Colors.bgLight,
     marginHorizontal: 20,
-    marginBottom: 30,
+    marginTop: 18,
+    marginBottom: 28,
     padding: 24,
     borderRadius: 24,
     // iOS shadow

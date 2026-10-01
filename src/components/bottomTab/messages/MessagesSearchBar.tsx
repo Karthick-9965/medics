@@ -1,13 +1,7 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Colors } from '../../../constants/Colors';
+import SearchBar from '../../common/SearchBar';
 
 export type MessageFilter = 'all' | 'doctor' | 'clinic';
 
@@ -24,6 +18,9 @@ const FILTERS: { key: MessageFilter; label: string }[] = [
   { key: 'clinic', label: 'Clinics' },
 ];
 
+/**
+ * Message tab search bar combining unified SearchBar and message category filters.
+ */
 export default function MessagesSearchBar({
   searchQuery,
   onChangeSearchQuery,
@@ -32,27 +29,12 @@ export default function MessagesSearchBar({
 }: MessagesSearchBarProps) {
   return (
     <View style={styles.container}>
-      {/* Search Input Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons
-          name="search-outline"
-          size={20}
-          color={Colors.inputIcon}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search doctor, message..."
-          placeholderTextColor={Colors.inputPlaceholder}
-          value={searchQuery}
-          onChangeText={onChangeSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => onChangeSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color={Colors.secondary} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchBar
+        value={searchQuery}
+        onChangeText={onChangeSearchQuery}
+        placeholder="Search doctor, message..."
+        containerStyle={styles.searchBarWrapper}
+      />
 
       {/* Filter Pills */}
       <View style={styles.filterRow}>
@@ -81,24 +63,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 8,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 48,
-    marginBottom: 14,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: Colors.textDark,
+  searchBarWrapper: {
+    marginBottom: 12,
   },
   filterRow: {
     flexDirection: 'row',
@@ -110,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: Colors.bgLight,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderLight,
   },
   filterPillActive: {
     backgroundColor: Colors.primary,
@@ -119,7 +85,7 @@ const styles = StyleSheet.create({
   filterPillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.secondary,
+    color: Colors.textMuted,
   },
   filterPillTextActive: {
     color: Colors.white,

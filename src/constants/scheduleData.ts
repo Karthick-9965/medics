@@ -2,17 +2,28 @@ import { AppointmentItem } from '../components/bottomTab/schedule/AppointmentCar
 import { DOCTORS_DATA } from './doctorsData';
 
 export const DOCTOR_AVATARS: Record<string, any> = {
-  'Dr. Marcus Horizon': require('../assets/images/home/doctors/marcus-horizon.png'),
-  'Dr. Maria Elena': require('../assets/images/home/doctors/maria-elena.png'),
-  'Dr. Stefi Jessi': require('../assets/images/home/doctors/stefi-jessi.png'),
-  'Dr. Gerty Cori': require('../assets/images/home/doctors/doctor-gerty.png'),
-  'Dr. Diandra': require('../assets/images/home/doctors/doctor-diandra.png'),
+  'Dr. Marcus Horizon': require('../assets/images/doctors/marcus-horizon.png'),
+  'Dr. Maria Elena': require('../assets/images/doctors/maria-elena.png'),
+  'Dr. Stefi Jessi': require('../assets/images/doctors/stefi-jessi.png'),
+  'Dr. Gerty Cori': require('../assets/images/doctors/doctor-gerty.png'),
+  'Dr. Gerty Horizon': require('../assets/images/doctors/doctor-gerty.png'),
+  'Dr. Alexander Reed': require('../assets/images/doctors/alexander-reed.png'),
+  'Dr. Sophia Chen': require('../assets/images/doctors/sophia-chen.png'),
+  'Dr. Rajesh Varma': require('../assets/images/doctors/rajesh-varma.png'),
+  'Dr. Emily Watson': require('../assets/images/doctors/emily-watson.png'),
+  'Dr. David Miller': require('../assets/images/doctors/david-miller.png'),
+  'Dr. Diandra': require('../assets/images/doctors/doctor-diandra.png'),
 };
 
-export const getDoctorAvatar = (doctorName: string, fallback?: any) => {
-  if (DOCTOR_AVATARS[doctorName]) return DOCTOR_AVATARS[doctorName];
-  const doc = DOCTORS_DATA.find((d) => d.name.toLowerCase() === doctorName.toLowerCase());
-  if (doc && doc.image) return doc.image;
+export const getDoctorAvatar = (doctorName?: string, fallback?: any) => {
+  if (typeof fallback === 'number' || (fallback && typeof fallback === 'object' && 'uri' in fallback)) {
+    return fallback;
+  }
+  if (doctorName && DOCTOR_AVATARS[doctorName]) return DOCTOR_AVATARS[doctorName];
+  if (doctorName) {
+    const doc = DOCTORS_DATA.find((d) => d.name.toLowerCase() === doctorName.toLowerCase());
+    if (doc && doc.image) return doc.image;
+  }
   return fallback || DOCTOR_AVATARS['Dr. Marcus Horizon'];
 };
 
@@ -21,7 +32,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     id: '1',
     doctorName: 'Dr. Marcus Horizon',
     specialization: 'Cardiologist',
-    avatar: require('../assets/images/home/doctors/marcus-horizon.png'),
+    avatar: require('../assets/images/doctors/marcus-horizon.png'),
     rating: '4.7',
     date: '26/06/2026',
     time: '10:30 AM',
@@ -40,7 +51,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     id: '2',
     doctorName: 'Dr. Maria Elena',
     specialization: 'Psychologist',
-    avatar: require('../assets/images/home/doctors/maria-elena.png'),
+    avatar: require('../assets/images/doctors/maria-elena.png'),
     rating: '4.9',
     date: '28/06/2026',
     time: '02:00 PM',
@@ -59,7 +70,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     id: '3',
     doctorName: 'Dr. Stefi Jessi',
     specialization: 'Orthopedist',
-    avatar: require('../assets/images/home/doctors/stefi-jessi.png'),
+    avatar: require('../assets/images/doctors/stefi-jessi.png'),
     rating: '4.8',
     date: '15/05/2026',
     time: '11:00 AM',
@@ -82,7 +93,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     id: '4',
     doctorName: 'Dr. Gerty Cori',
     specialization: 'General Specialist',
-    avatar: require('../assets/images/home/doctors/doctor-gerty.png'),
+    avatar: require('../assets/images/doctors/doctor-gerty.png'),
     rating: '4.7',
     date: '10/05/2026',
     time: '04:30 PM',
@@ -105,7 +116,7 @@ export const INITIAL_APPOINTMENTS: AppointmentItem[] = [
     id: '5',
     doctorName: 'Dr. Diandra',
     specialization: 'Dentist',
-    avatar: require('../assets/images/home/doctors/doctor-diandra.png'),
+    avatar: require('../assets/images/doctors/doctor-diandra.png'),
     rating: '4.7',
     date: '02/04/2026',
     time: '09:00 AM',

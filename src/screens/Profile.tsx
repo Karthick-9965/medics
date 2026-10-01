@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import ProfileUserCard from '../components/bottomTab/profile/ProfileUserCard';
 import HealthStatsRow from '../components/bottomTab/profile/HealthStatsRow';
 import ProfileMenuItem from '../components/bottomTab/profile/ProfileMenuItem';
-import LogoutModal from '../components/modals/LogoutModal';
-import ProfilePhotoModal from '../components/bottomTab/profile/ProfilePhotoModal';
-import PersonalInfoModal, { UserProfileData } from '../components/bottomTab/profile/PersonalInfoModal';
+import ProfileModalsContainer from '../components/bottomTab/profile/ProfileModalsContainer';
+import { UserProfileData } from '../components/bottomTab/profile/PersonalInfoModal';
+import { SupportedLanguage } from '../components/bottomTab/profile/LanguageSelectModal';
 import { getLoginSession } from '../utils/storage';
+import { useMedicalAlert } from '../hooks/useMedicalAlert';
 
 const INITIAL_PROFILE: UserProfileData = {
   name: 'Sathish Kumar',
@@ -56,12 +58,18 @@ export default function Profile({
   onAvatarChange,
   onLogout,
   onNavigateToSchedule,
-  onNavigateToSavedDoctors,
 }: ProfileProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [showPersonalInfoModal, setShowPersonalInfoModal] = useState(false);
+  const [showVaultModal, setShowVaultModal] = useState(false);
+  const [showPharmacyOrdersModal, setShowPharmacyOrdersModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showHelpCenterModal, setShowHelpCenterModal] = useState(false);
+  const [appLanguage, setAppLanguage] = useState<SupportedLanguage>('en');
+
+  const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
 
   const [avatarUri, setAvatarUri] = useState<string | null>(propAvatar || null);
   const [profileData, setProfileData] = useState<UserProfileData>({
@@ -94,12 +102,31 @@ export default function Profile({
         }
         const av = await AsyncStorage.getItem('@user_avatar');
         if (av) setAvatarUri(av);
+
+        const lang = await AsyncStorage.getItem('@app_language');
+        if (lang === 'ta' || lang === 'en') setAppLanguage(lang);
       } catch (e) {
         console.log(e);
       }
     };
     load();
   }, [userName, userEmail]);
+
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem('@user_avatar').then((av) => {
+        if (av) setAvatarUri(av);
+      });
+      AsyncStorage.getItem('@app_language').then((lang) => {
+        if (lang === 'ta' || lang === 'en') setAppLanguage(lang);
+      });
+      ImagePicker.getPendingResultAsync().then((pending) => {
+        if (pending && 'assets' in pending && !pending.canceled && pending.assets && pending.assets.length > 0) {
+          handleAvatarChange(pending.assets[0].uri);
+        }
+      }).catch((e) => console.log('Pending image error:', e));
+    }, [])
+  );
 
   const displayName = profileData.name || userName || 'User';
   const displayEmail = profileData.email || userEmail || `${displayName.toLowerCase().replace(/\s+/g, '')}@example.com`;
@@ -114,6 +141,15 @@ export default function Profile({
     }
     if (onAvatarPicked) onAvatarPicked(uri);
     if (onAvatarChange) onAvatarChange(uri);
+
+    if (uri) {
+      showAlert({
+        type: 'success',
+        icon: 'checkmark-circle',
+        title: 'Profile Updated',
+        message: 'Your profile picture has been updated successfully.',
+      });
+    }
   };
 
   return (
@@ -127,11 +163,12 @@ export default function Profile({
         <View style={styles.header}>
           <Text style={styles.headerTitle}>My Profile</Text>
           <TouchableOpacity
-            style={styles.headerIconButton}
-            onPress={() => setShowPersonalInfoModal(true)}
+            style={styles.headerLogoutButton}
+            onPress={() => setShowLogoutModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="settings-outline" size={22} color={Colors.textDark} />
+            <Ionicons name="log-out-outline" size={17} color={Colors.logoutRed} />
+            <Text style={styles.headerLogoutText}>Log Out</Text>
           </TouchableOpacity>
         </View>
 
@@ -162,10 +199,19 @@ export default function Profile({
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
-              icon="heart-outline"
-              title="My Saved Doctors"
-              badge="5"
-              onPress={() => onNavigateToSavedDoctors?.()}
+              icon="document-text-outline"
+              title="My Prescriptions & Reports"
+              subtitle="Digital Rx & verified lab records"
+              badge="Vault"
+              onPress={() => setShowVaultModal(true)}
+            />
+            <View style={styles.itemDivider} />
+            <ProfileMenuItem
+              icon="bag-check-outline"
+              title="My Pharmacy Orders"
+              subtitle="Track medicine deliveries & ETA"
+              badge="Live"
+              onPress={() => setShowPharmacyOrdersModal(true)}
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
@@ -178,13 +224,20 @@ export default function Profile({
               icon="card-outline"
               title="Payment Method"
               subtitle="Visa ending in 4242"
-              onPress={() => Alert.alert('Payment Method', 'UPI & Visa Card ending in 4242 are verified.')}
+              onPress={() =>
+                showAlert({
+                  type: 'receipt',
+                  icon: 'card-outline',
+                  title: 'Payment Method',
+                  message: 'UPI & Visa Card ending in 4242 are verified and ready for instant checkout.',
+                })
+              }
             />
           </View>
         </View>
 
-        {/* Menu Section 2: App & Security */}
-        <View style={styles.menuSection}>
+        {/* Menu Section 2: App & General */}
+        <View style={[styles.menuSection, styles.lastMenuSection]}>
           <Text style={styles.sectionHeaderTitle}>General Settings</Text>
           <View style={styles.menuCard}>
             <ProfileMenuItem
@@ -195,61 +248,67 @@ export default function Profile({
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
-              icon="shield-checkmark-outline"
-              title="Privacy & Security"
-              onPress={() => Alert.alert('Privacy & Security', 'End-to-end 256-bit encrypted medical consultations.')}
+              icon="language-outline"
+              title="Language / மொழி"
+              subtitle={appLanguage === 'ta' ? 'தமிழ் (Tamil)' : 'English (US)'}
+              badge={appLanguage === 'ta' ? 'தமிழ்' : 'EN'}
+              onPress={() => setShowLanguageModal(true)}
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
               icon="help-circle-outline"
               title="Help Center & FAQs"
-              onPress={() => Alert.alert('Help Center', 'Our 24/7 patient support is ready to help at support@telemed.com')}
-            />
-          </View>
-        </View>
-
-        {/* Menu Section 3: Logout */}
-        <View style={styles.menuSection}>
-          <View style={styles.menuCard}>
-            <ProfileMenuItem
-              icon="log-out-outline"
-              title="Log Out"
-              isDestructive
-              onPress={() => setShowLogoutModal(true)}
+              subtitle="24/7 care helpline & questions"
+              onPress={() => setShowHelpCenterModal(true)}
             />
           </View>
         </View>
       </ScrollView>
 
-      {/* Custom Logout Popup Modal */}
-      <LogoutModal
-        visible={showLogoutModal}
-        onConfirm={() => {
+      {/* Modular Profile Modals Container */}
+      <ProfileModalsContainer
+        showLogoutModal={showLogoutModal}
+        onCloseLogoutModal={() => setShowLogoutModal(false)}
+        onConfirmLogout={() => {
           setShowLogoutModal(false);
           if (onLogout) onLogout();
         }}
-        onCancel={() => setShowLogoutModal(false)}
-      />
-
-      {/* Custom UI Profile Photo Selection Modal */}
-      <ProfilePhotoModal
-        visible={showPhotoModal}
+        showPhotoModal={showPhotoModal}
         avatarUri={avatarUri}
         userName={displayName}
         userEmail={displayEmail}
         onAvatarPicked={handleAvatarChange}
-        onClose={() => setShowPhotoModal(false)}
-      />
-
-      {/* Personal Info Edit Modal */}
-      <PersonalInfoModal
-        visible={showPersonalInfoModal}
-        initialData={profileData}
-        onClose={() => setShowPersonalInfoModal(false)}
-        onSave={(data) => {
+        onClosePhotoModal={() => setShowPhotoModal(false)}
+        showPersonalInfoModal={showPersonalInfoModal}
+        profileData={profileData}
+        onClosePersonalInfoModal={() => setShowPersonalInfoModal(false)}
+        onSavePersonalInfo={(data) => {
           setProfileData(data);
           AsyncStorage.setItem('@user_profile_data', JSON.stringify(data));
         }}
+        showVaultModal={showVaultModal}
+        onCloseVaultModal={() => setShowVaultModal(false)}
+        showPharmacyOrdersModal={showPharmacyOrdersModal}
+        onClosePharmacyOrdersModal={() => setShowPharmacyOrdersModal(false)}
+        showLanguageModal={showLanguageModal}
+        currentLanguage={appLanguage}
+        onCloseLanguageModal={() => setShowLanguageModal(false)}
+        onLanguageChanged={(newLang) => {
+          setAppLanguage(newLang);
+          showAlert({
+            type: 'success',
+            icon: 'language',
+            title: newLang === 'ta' ? 'மொழி மாற்றப்பட்டது' : 'Language Updated',
+            message:
+              newLang === 'ta'
+                ? 'பயன்பாட்டின் மொழி தமிழுக்கு மாற்றப்பட்டது.'
+                : 'App interface language set to English successfully.',
+          });
+        }}
+        showHelpCenterModal={showHelpCenterModal}
+        onCloseHelpCenterModal={() => setShowHelpCenterModal(false)}
+        alertConfig={alertConfig}
+        onCloseAlert={closeAlert}
       />
     </SafeAreaView>
   );
@@ -266,7 +325,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -280,11 +339,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.textDark,
   },
-  headerIconButton: {
-    padding: 6,
+  headerLogoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.dangerBgTint,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  headerLogoutText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: Colors.logoutRed,
   },
   menuSection: {
     marginBottom: 20,
+  },
+  lastMenuSection: {
+    marginBottom: 0,
   },
   sectionHeaderTitle: {
     fontSize: 14,

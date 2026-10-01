@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/Colors';
 import MessagesSearchBar, { MessageFilter } from '../components/bottomTab/messages/MessagesSearchBar';
 import ConversationCard, { ConversationItem } from '../components/bottomTab/messages/ConversationCard';
@@ -16,10 +17,10 @@ import ChatDetailModal, { ChatMessage } from '../components/bottomTab/messages/C
 import AudioCallModal from '../components/consultation/AudioCallModal';
 import VideoCallModal from '../components/consultation/VideoCallModal';
 import NotificationsModal from '../components/home/NotificationsModal';
+import EmptyState from '../components/common/EmptyState';
 import { CONVERSATIONS, INITIAL_CHAT_MESSAGES } from '../constants/messagesData';
 import { generateDoctorReply } from '../utils/doctorReplyEngine';
 import { sendDoctorMessageNotification } from '../services/notificationManager';
-import { getUnreadNotificationsCount, subscribeNotifications } from '../services/notificationStorage';
 
 interface MessagesProps {
   navigation?: any;
@@ -42,7 +43,6 @@ export default function Messages({
   const [typingDoctorId, setTypingDoctorId] = useState<string | null>(null);
   const [showAudioCall, setShowAudioCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [showNotifModal, setShowNotifModal] = useState(false);
 
   useEffect(() => {
@@ -54,22 +54,42 @@ export default function Messages({
         }
 
         const storedConvs = await AsyncStorage.getItem('@app_conversations');
+        let currentConvs = CONVERSATIONS;
         if (storedConvs) {
-          setConversations(JSON.parse(storedConvs));
+          currentConvs = JSON.parse(storedConvs);
+          setConversations(currentConvs);
         } else {
           setConversations(CONVERSATIONS);
+        }
+
+        // If Android OS killed activity during camera capture, recover active doctor chat
+        try {
+          const pending = await ImagePicker.getPendingResultAsync();
+          if (
+            pending &&
+            'assets' in pending &&
+            !pending.canceled &&
+            pending.assets &&
+            pending.assets.length > 0
+          ) {
+            const activeId = await AsyncStorage.getItem('@active_chat_id');
+            if (activeId) {
+              const activeDoc =
+                currentConvs.find((c: ConversationItem) => c.id === activeId) ||
+                CONVERSATIONS.find((c) => c.id === activeId);
+              if (activeDoc) {
+                setSelectedChat(activeDoc);
+              }
+            }
+          }
+        } catch (err) {
+          console.log('Pending image check in Messages error:', err);
         }
       } catch (e) {
         console.log(e);
       }
     };
     load();
-
-    getUnreadNotificationsCount().then(setUnreadNotifCount);
-    const unsub = subscribeNotifications((list) => {
-      setUnreadNotifCount(list.filter((n) => !n.read).length);
-    });
-    return () => unsub();
   }, []);
 
   const saveChats = async (data: { [id: string]: ChatMessage[] }) => {
@@ -88,7 +108,7 @@ export default function Messages({
     }
   };
 
-  const handleOpenChat = (item: ConversationItem) => {
+  const handleOpenChat = async (item: ConversationItem) => {
     // Clear unread badge for this conversation
     const updated = conversations.map((c) =>
       c.id === item.id ? { ...c, unread: 0 } : c
@@ -96,6 +116,20 @@ export default function Messages({
     setConversations(updated);
     saveConversations(updated);
     setSelectedChat({ ...item, unread: 0 });
+    try {
+      await AsyncStorage.setItem('@active_chat_id', item.id);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const handleCloseChat = async () => {
+    setSelectedChat(null);
+    try {
+      await AsyncStorage.removeItem('@active_chat_id');
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const filteredConversations = conversations.filter((item) => {
@@ -158,29 +192,42 @@ export default function Messages({
     });
   };
 
-  const handleSendMessage = (text: string, image?: string, isPrescription?: boolean) => {
+  const handleSendMessage = (
+    text: string,
+    image?: string,
+    isPrescription?: boolean,
+    prescriptionName?: string
+  ) => {
     if (!selectedChat) return;
     const id = selectedChat.id;
     const currentList = chatMessages[id] || [
       { sender: 'doctor', text: selectedChat.lastMessage, time: selectedChat.time },
     ];
     const userMsg: ChatMessage = {
+      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       sender: 'user',
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       image,
       isPrescription,
+      prescriptionName: prescriptionName || (image ? 'Prescription Document' : undefined),
     };
     const updatedMessages = { ...chatMessages, [id]: [...currentList, userMsg] };
     setChatMessages(updatedMessages);
     saveChats(updatedMessages);
 
     // Update conversation last message in list
+    const isPdf =
+      prescriptionName?.toLowerCase().endsWith('.pdf') ||
+      image?.toLowerCase().endsWith('.pdf') ||
+      image?.toLowerCase().includes('.pdf');
+    const attachmentLabel = isPdf ? '📄 Prescription PDF' : '📷 Prescription Photo';
+
     const updatedConvs = conversations.map((c) =>
       c.id === id
         ? {
             ...c,
-            lastMessage: text || (image ? '📄 Prescription Attached' : 'Attachment'),
+            lastMessage: text || (image ? attachmentLabel : 'Attachment'),
             time: 'Just now',
           }
         : c
@@ -201,6 +248,54 @@ export default function Messages({
       await handleReceiveDoctorMessage(id, reply);
       setTypingDoctorId(null);
     }, 1500);
+  };
+
+  const handleDeleteMessage = (messageIndex: number, messageId?: string) => {
+    if (!selectedChat) return;
+    const id = selectedChat.id;
+    const currentList = chatMessages[id] || [];
+    if (currentList.length === 0) return;
+
+    let updatedList: ChatMessage[];
+    if (messageId) {
+      updatedList = currentList.filter((m) => m.id !== messageId);
+    } else {
+      updatedList = currentList.filter((_, idx) => idx !== messageIndex);
+    }
+
+    const updatedMessages = { ...chatMessages, [id]: updatedList };
+    setChatMessages(updatedMessages);
+    saveChats(updatedMessages);
+
+    // Update conversation card preview if the deleted message was the latest one
+    const newLastMsg = updatedList[updatedList.length - 1];
+    let newLastText = 'No messages yet';
+    let newTime = 'Just now';
+
+    if (newLastMsg) {
+      newTime = newLastMsg.time;
+      if (newLastMsg.text) {
+        newLastText = newLastMsg.text;
+      } else if (newLastMsg.image) {
+        const isPdf =
+          newLastMsg.prescriptionName?.toLowerCase().endsWith('.pdf') ||
+          newLastMsg.image?.toLowerCase().endsWith('.pdf') ||
+          newLastMsg.image?.toLowerCase().includes('.pdf');
+        newLastText = isPdf ? '📄 Prescription PDF' : '📷 Prescription Photo';
+      }
+    }
+
+    const updatedConvs = conversations.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            lastMessage: newLastText,
+            time: newTime,
+          }
+        : c
+    );
+    setConversations(updatedConvs);
+    saveConversations(updatedConvs);
   };
 
   const handleSimulateIncomingMessage = async () => {
@@ -243,20 +338,6 @@ export default function Messages({
               <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.primary} />
               <Text style={styles.testMsgBtnText}>Test Msg</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.notifBtn}
-              onPress={() => setShowNotifModal(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="notifications-outline" size={22} color={Colors.textDark} />
-              {unreadNotifCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -275,11 +356,11 @@ export default function Messages({
           showsVerticalScrollIndicator={false}
         >
           {filteredConversations.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubbles-outline" size={48} color={Colors.secondary} />
-              <Text style={styles.emptyTitle}>No messages found</Text>
-              <Text style={styles.emptySubtitle}>Try searching for a different doctor or keyword</Text>
-            </View>
+            <EmptyState
+              icon="chatbubbles-outline"
+              title="No messages found"
+              subtitle="Try searching for a different doctor or keyword"
+            />
           ) : (
             filteredConversations.map((item) => (
               <ConversationCard
@@ -304,8 +385,9 @@ export default function Messages({
             : []
         }
         isTyping={typingDoctorId === selectedChat?.id}
-        onClose={() => setSelectedChat(null)}
+        onClose={handleCloseChat}
         onSendMessage={handleSendMessage}
+        onDeleteMessage={handleDeleteMessage}
         onAudioCall={() => setShowAudioCall(true)}
         onVideoCall={() => setShowVideoCall(true)}
       />
@@ -397,57 +479,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
-  notifBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: Colors.bgLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: Colors.error,
-    minWidth: 17,
-    height: 17,
-    borderRadius: 8.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: Colors.white,
-  },
-  badgeText: {
-    color: Colors.white,
-    fontSize: 9,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
   scrollList: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textDark,
-    marginTop: 14,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: Colors.secondary,
-    textAlign: 'center',
   },
 });

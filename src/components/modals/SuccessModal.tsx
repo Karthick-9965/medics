@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
@@ -12,6 +12,7 @@ export interface SuccessModalProps {
   buttonText?: string;
   onPressButton?: () => void;
   onButtonPress?: () => void;
+  autoCloseDelay?: number;
 }
 
 export default function SuccessModal({
@@ -22,12 +23,31 @@ export default function SuccessModal({
   buttonText,
   onPressButton,
   onButtonPress,
+  autoCloseDelay,
 }: SuccessModalProps) {
   const btnLabel = buttonTitle || buttonText || 'Continue';
   const handlePress = onPressButton || onButtonPress || (() => {});
+  const handlePressRef = useRef(handlePress);
+  handlePressRef.current = handlePress;
+
+  useEffect(() => {
+    if (!visible || !autoCloseDelay || autoCloseDelay <= 0) return;
+
+    const timer = setTimeout(() => {
+      handlePressRef.current();
+    }, autoCloseDelay);
+
+    return () => clearTimeout(timer);
+  }, [visible, autoCloseDelay]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconCircle}>

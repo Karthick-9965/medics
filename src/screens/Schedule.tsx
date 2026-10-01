@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { StyleSheet, View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
-import { INITIAL_APPOINTMENTS, DOCTOR_AVATARS, getDoctorAvatar } from '../constants/scheduleData';
+import { INITIAL_APPOINTMENTS, getDoctorAvatar } from '../constants/scheduleData';
 import ScheduleStatusTabs, { ScheduleStatus } from '../components/bottomTab/schedule/ScheduleStatusTabs';
 import AppointmentCard, { AppointmentItem } from '../components/bottomTab/schedule/AppointmentCard';
-import AppointmentDetailModal from '../components/bottomTab/schedule/AppointmentDetailModal';
-import RebookModal from '../components/bottomTab/schedule/RebookModal';
-import RescheduleModal from '../components/bottomTab/schedule/RescheduleModal';
-import CancelAppointmentModal from '../components/bottomTab/schedule/CancelAppointmentModal';
-import LeaveReviewModal from '../components/bottomTab/schedule/LeaveReviewModal';
-import VideoCallModal from '../components/consultation/VideoCallModal';
-import AudioCallModal from '../components/consultation/AudioCallModal';
-import NotificationsModal from '../components/home/NotificationsModal';
-import { getUnreadNotificationsCount, subscribeNotifications } from '../services/notificationStorage';
+import ScheduleModalsContainer from '../components/bottomTab/schedule/ScheduleModalsContainer';
+import EmptyState from '../components/common/EmptyState';
+import { useMedicalAlert } from '../hooks/useMedicalAlert';
+import { generateReferenceId } from '../utils/formatters';
+import {
+  sendAppointmentRescheduledNotificationAndReminder,
+  sendAppointmentRebookedNotificationAndReminder,
+} from '../services/notificationManager';
 
 interface ScheduleProps {
   navigation?: any;
@@ -39,8 +37,9 @@ export default function Schedule({
   const [detailTarget, setDetailTarget] = useState<AppointmentItem | null>(null);
   const [videoDoctor, setVideoDoctor] = useState<any | null>(null);
   const [audioDoctor, setAudioDoctor] = useState<any | null>(null);
-  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [showNotifModal, setShowNotifModal] = useState(false);
+
+  const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +49,7 @@ export default function Schedule({
           const stored: AppointmentItem[] = JSON.parse(storedStr);
           const restored = stored.map((a) => ({
             ...a,
-            avatar: typeof a.avatar === 'number' ? a.avatar : getDoctorAvatar(a.doctorName, a.avatar),
+            avatar: getDoctorAvatar(a.doctorName, a.avatar),
           }));
           setAppointments(restored);
         } else {
@@ -62,9 +61,6 @@ export default function Schedule({
       }
     };
     load();
-    getUnreadNotificationsCount().then(setUnreadNotifCount);
-    const unsub = subscribeNotifications((list) => setUnreadNotifCount(list.filter((n) => !n.read).length));
-    return () => unsub();
   }, []);
 
   const persist = async (list: AppointmentItem[]) => {
@@ -103,12 +99,14 @@ export default function Schedule({
     }
   };
 
-  const handleConfirmReview = (rating: number, review: string) => {
+  const handleConfirmReview = (rating: number, _review: string) => {
     setReviewTarget(null);
-    Alert.alert(
-      'Thank You! ⭐',
-      `Your ${rating}-star review and feedback have been submitted successfully.`
-    );
+    showAlert({
+      type: 'success',
+      icon: 'star',
+      title: 'Review Submitted',
+      message: `Your ${rating}-star rating and feedback have been submitted successfully.`,
+    });
   };
 
   const handleOpenReschedule = (id: string) => {
@@ -119,6 +117,7 @@ export default function Schedule({
   };
 
   const handleConfirmReschedule = (appointmentId: string, newDate: string, newTime: string) => {
+    const target = appointments.find((a) => a.id === appointmentId);
     const updated = appointments.map((item) =>
       item.id === appointmentId
         ? {
@@ -132,11 +131,26 @@ export default function Schedule({
     setAppointments(updated);
     persist(updated);
     setRescheduleTarget(null);
-    const docName = appointments.find((a) => a.id === appointmentId)?.doctorName || 'Doctor';
-    Alert.alert(
-      'Appointment Rescheduled! 📅',
-      `Your appointment with ${docName} is now rescheduled for ${newDate} at ${newTime}.`
-    );
+
+    const docName = target?.doctorName || 'Doctor';
+
+    if (target) {
+      sendAppointmentRescheduledNotificationAndReminder({
+        doctorName: target.doctorName,
+        specialization: target.specialization,
+        date: newDate,
+        time: newTime,
+        consultationType: target.consultationType || 'Consultation',
+        bookingId: target.bookingId || generateReferenceId('MED'),
+        setReminder: true,
+      });
+    }
+
+    showAlert({
+      type: 'calendar',
+      title: 'Appointment Rescheduled',
+      message: `Your appointment with ${docName} is now rescheduled for ${newDate} at ${newTime}. A reminder has also been set.`,
+    });
   };
 
   const handleOpenRebook = (id: string) => {
@@ -150,6 +164,7 @@ export default function Schedule({
     const base = appointments.find((a) => a.id === appointmentId);
     if (!base) return;
 
+    const newBookingId = generateReferenceId('MED');
     const newAppointment: AppointmentItem = {
       ...base,
       id: `${Date.now()}`,
@@ -157,7 +172,7 @@ export default function Schedule({
       time: newTime,
       status: 'upcoming',
       statusLabel: 'Confirmed',
-      bookingId: `#MED-${Math.floor(100000 + Math.random() * 900000)}`,
+      bookingId: newBookingId,
     };
 
     const updated = [newAppointment, ...appointments];
@@ -165,26 +180,40 @@ export default function Schedule({
     persist(updated);
     setActiveTab('upcoming');
     setRebookTarget(null);
-    Alert.alert(
-      'Appointment Re-Booked! 🎉',
-      `Your appointment with ${base.doctorName} is confirmed for ${newDate} at ${newTime}.`
-    );
+
+    sendAppointmentRebookedNotificationAndReminder({
+      doctorName: base.doctorName,
+      specialization: base.specialization,
+      date: newDate,
+      time: newTime,
+      consultationType: base.consultationType || 'Consultation',
+      bookingId: newBookingId,
+      setReminder: true,
+    });
+
+    showAlert({
+      type: 'calendar',
+      title: 'Appointment Re-Booked',
+      message: `Your appointment with ${base.doctorName} is confirmed for ${newDate} at ${newTime}. A reminder has also been set.`,
+    });
   };
 
   const handleDeleteAppointment = (id: string) => {
-    Alert.alert('Delete Record', 'Permanently delete this canceled consultation record?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          const updated = appointments.filter((a) => a.id !== id);
-          setAppointments(updated);
-          persist(updated);
-          setDetailTarget(null);
-        },
+    showAlert({
+      type: 'delete',
+      title: 'Delete Record',
+      message: 'Permanently delete this canceled consultation record? This action cannot be undone.',
+      primaryButtonText: 'Delete',
+      secondaryButtonText: 'Cancel',
+      isDestructive: true,
+      onPrimaryPress: () => {
+        closeAlert();
+        const updated = appointments.filter((a) => a.id !== id);
+        setAppointments(updated);
+        persist(updated);
+        setDetailTarget(null);
       },
-    ]);
+    });
   };
 
   return (
@@ -193,23 +222,9 @@ export default function Schedule({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Schedule</Text>
-          <TouchableOpacity
-            style={styles.headerNotificationButton}
-            onPress={() => setShowNotifModal(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="notifications-outline" size={22} color={Colors.textDark} />
-            {unreadNotifCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
         </View>
 
-        {/* Status Tab Switcher - Count only for Completed */}
+        {/* Status Tab Switcher */}
         <ScheduleStatusTabs
           activeTab={activeTab}
           onSelectTab={setActiveTab}
@@ -223,13 +238,11 @@ export default function Schedule({
           showsVerticalScrollIndicator={false}
         >
           {filteredAppointments.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={54} color={Colors.secondary} />
-              <Text style={styles.emptyTitle}>No {activeTab} appointments</Text>
-              <Text style={styles.emptySubtitle}>
-                You have no {activeTab} consultations at the moment.
-              </Text>
-            </View>
+            <EmptyState
+              icon="calendar-outline"
+              title={`No ${activeTab} appointments`}
+              subtitle={`You have no ${activeTab} consultations at the moment.`}
+            />
           ) : (
             filteredAppointments.map((item) => (
               <AppointmentCard
@@ -246,61 +259,40 @@ export default function Schedule({
           )}
         </ScrollView>
 
-        {/* Re-Book Modal */}
-        <RebookModal
-          visible={!!rebookTarget}
-          appointment={rebookTarget}
-          onClose={() => setRebookTarget(null)}
-          onRebooked={handleConfirmRebook}
-        />
-
-        {/* Reschedule Modal */}
-        <RescheduleModal
-          visible={!!rescheduleTarget}
-          appointment={rescheduleTarget}
-          onClose={() => setRescheduleTarget(null)}
-          onRescheduled={handleConfirmReschedule}
-        />
-
-        {/* Cancel Appointment Modal */}
-        <CancelAppointmentModal
-          visible={!!cancelTarget}
-          appointment={cancelTarget}
-          onClose={() => setCancelTarget(null)}
-          onCancelled={handleConfirmCancel}
-        />
-
-        {/* Leave Review Modal */}
-        <LeaveReviewModal
-          visible={!!reviewTarget}
-          appointment={reviewTarget}
-          onClose={() => setReviewTarget(null)}
-          onReviewSubmitted={handleConfirmReview}
-        />
-
-        {/* Full Details Modal */}
-        <AppointmentDetailModal
-          visible={!!detailTarget}
-          appointment={detailTarget}
-          onClose={() => setDetailTarget(null)}
-          onCancel={(id) => {
+        {/* Encapsulated Modals */}
+        <ScheduleModalsContainer
+          rebookTarget={rebookTarget}
+          onCloseRebook={() => setRebookTarget(null)}
+          onConfirmRebook={handleConfirmRebook}
+          rescheduleTarget={rescheduleTarget}
+          onCloseReschedule={() => setRescheduleTarget(null)}
+          onConfirmReschedule={handleConfirmReschedule}
+          cancelTarget={cancelTarget}
+          onCloseCancel={() => setCancelTarget(null)}
+          onConfirmCancel={handleConfirmCancel}
+          reviewTarget={reviewTarget}
+          onCloseReview={() => setReviewTarget(null)}
+          onConfirmReview={handleConfirmReview}
+          detailTarget={detailTarget}
+          onCloseDetail={() => setDetailTarget(null)}
+          onOpenCancelFromDetail={(id) => {
             setDetailTarget(null);
             handleOpenCancel(id);
           }}
-          onReschedule={(id) => {
+          onOpenRescheduleFromDetail={(id) => {
             setDetailTarget(null);
             handleOpenReschedule(id);
           }}
-          onRebook={(id) => {
+          onOpenRebookFromDetail={(id) => {
             setDetailTarget(null);
             handleOpenRebook(id);
           }}
-          onReview={(id) => {
+          onOpenReviewFromDetail={(id) => {
             setDetailTarget(null);
             handleOpenReview(id);
           }}
-          onDelete={handleDeleteAppointment}
-          onJoinCall={(app) => {
+          onDeleteFromDetail={handleDeleteAppointment}
+          onJoinCallFromDetail={(app) => {
             setDetailTarget(null);
             setVideoDoctor({
               id: app.id,
@@ -309,51 +301,28 @@ export default function Schedule({
               avatar: app.avatar,
             });
           }}
-        />
-
-        {/* Live Calls */}
-        <VideoCallModal
-          visible={!!videoDoctor}
-          doctor={videoDoctor}
-          onEndCall={() => setVideoDoctor(null)}
-          onSwitchToAudio={() => {
+          videoDoctor={videoDoctor}
+          onEndVideoCall={() => setVideoDoctor(null)}
+          onSwitchVideoToAudio={() => {
             const d = videoDoctor;
             setVideoDoctor(null);
             setAudioDoctor(d);
           }}
-        />
-
-        <AudioCallModal
-          visible={!!audioDoctor}
-          doctor={audioDoctor}
-          onEndCall={() => setAudioDoctor(null)}
-          onSwitchToVideo={() => {
+          audioDoctor={audioDoctor}
+          onEndAudioCall={() => setAudioDoctor(null)}
+          onSwitchAudioToVideo={() => {
             const d = audioDoctor;
             setAudioDoctor(null);
             setVideoDoctor(d);
           }}
-        />
-
-        {/* Notifications Modal */}
-        <NotificationsModal
-          visible={showNotifModal}
-          onClose={() => setShowNotifModal(false)}
-          onNavigateToMessages={() => {
-            setShowNotifModal(false);
-            if (onNavigateToMessages) onNavigateToMessages();
-            else if (navigation) navigation.navigate('Main', { screen: 'MessagesTab' });
-          }}
-          onNavigateToSchedule={() => setShowNotifModal(false)}
-          onNavigateToAmbulance={() => {
-            setShowNotifModal(false);
-            if (onNavigateToAmbulance) onNavigateToAmbulance();
-            else if (navigation) navigation.navigate('Ambulance');
-          }}
-          onNavigateToPharmacy={() => {
-            setShowNotifModal(false);
-            if (onNavigateToPharmacy) onNavigateToPharmacy();
-            else if (navigation) navigation.navigate('SeeAll', { category: 'pharmacy' });
-          }}
+          showNotifModal={showNotifModal}
+          onCloseNotifModal={() => setShowNotifModal(false)}
+          onNavigateToMessages={onNavigateToMessages}
+          onNavigateToAmbulance={onNavigateToAmbulance}
+          onNavigateToPharmacy={onNavigateToPharmacy}
+          navigation={navigation}
+          alertConfig={alertConfig}
+          onCloseAlert={closeAlert}
         />
       </View>
     </SafeAreaView>
@@ -370,62 +339,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 14,
+    paddingBottom: 16,
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: Colors.textDark,
   },
-  headerNotificationButton: {
-    padding: 6,
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    backgroundColor: Colors.error,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 3,
-  },
-  badgeText: {
-    color: Colors.white,
-    fontSize: 9,
-    fontWeight: '800',
-  },
   scrollList: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 16,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 70,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textDark,
-    marginTop: 14,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: Colors.secondary,
-    textAlign: 'center',
+    paddingBottom: 24,
   },
 });
