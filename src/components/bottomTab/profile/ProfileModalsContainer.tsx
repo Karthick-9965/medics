@@ -1,11 +1,12 @@
 import React from 'react';
-import LogoutModal from '../../modals/LogoutModal';
+import { Colors } from '../../../constants/Colors';
 import ProfilePhotoModal from './ProfilePhotoModal';
 import PersonalInfoModal, { UserProfileData } from './PersonalInfoModal';
 import PrescriptionsVaultModal from './PrescriptionsVaultModal';
 import PharmacyOrdersModal from './PharmacyOrdersModal';
 import LanguageSelectModal, { SupportedLanguage } from './LanguageSelectModal';
 import HelpCenterModal from './HelpCenterModal';
+import PaymentMethodsModal from './PaymentMethodsModal';
 import MedicalAlertModal, { MedicalAlertModalProps } from '../../modals/MedicalAlertModal';
 
 export interface ProfileModalsContainerProps {
@@ -30,6 +31,10 @@ export interface ProfileModalsContainerProps {
 
   showPharmacyOrdersModal: boolean;
   onClosePharmacyOrdersModal: () => void;
+
+  showPaymentMethodsModal: boolean;
+  onClosePaymentMethodsModal: () => void;
+  onCardUpdated?: (cardText: string) => void;
 
   showLanguageModal: boolean;
   currentLanguage: SupportedLanguage;
@@ -70,6 +75,10 @@ export default function ProfileModalsContainer({
   showPharmacyOrdersModal,
   onClosePharmacyOrdersModal,
 
+  showPaymentMethodsModal,
+  onClosePaymentMethodsModal,
+  onCardUpdated,
+
   showLanguageModal,
   currentLanguage,
   onCloseLanguageModal,
@@ -84,10 +93,19 @@ export default function ProfileModalsContainer({
   return (
     <>
       {/* Custom Logout Modal */}
-      <LogoutModal
+      <MedicalAlertModal
         visible={showLogoutModal}
-        onConfirm={onConfirmLogout}
-        onCancel={onCloseLogoutModal}
+        icon="log-out-outline"
+        iconColor={Colors.logoutRed}
+        iconBg={Colors.dangerBgLight}
+        title="Are you sure you want to log out?"
+        message="You will need to enter your email and password to sign back in."
+        primaryButtonText="Log Out"
+        secondaryButtonText="Cancel"
+        isDestructive
+        onPrimaryPress={onConfirmLogout}
+        onSecondaryPress={onCloseLogoutModal}
+        onClose={onCloseLogoutModal}
       />
 
       {/* Profile Photo Selection Modal */}
@@ -118,6 +136,13 @@ export default function ProfileModalsContainer({
       <PharmacyOrdersModal
         visible={showPharmacyOrdersModal}
         onClose={onClosePharmacyOrdersModal}
+      />
+
+      {/* Payment Methods & Cards Modal */}
+      <PaymentMethodsModal
+        visible={showPaymentMethodsModal}
+        onClose={onClosePaymentMethodsModal}
+        onCardUpdated={onCardUpdated}
       />
 
       {/* Language Selector Modal */}

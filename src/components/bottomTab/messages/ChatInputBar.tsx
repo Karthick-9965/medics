@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: Colors.dangerBorderTint,
   },
   attachedPdfBadge: {
     position: 'absolute',

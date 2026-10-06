@@ -2,8 +2,9 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import SearchBar from '../../common/SearchBar';
+import FilterChipsBar from '../../common/FilterChipsBar';
 
-export type MessageFilter = 'all' | 'doctor' | 'clinic';
+export type MessageFilter = 'all' | 'doctor' | 'clinic' | 'pharmacy';
 
 interface MessagesSearchBarProps {
   searchQuery: string;
@@ -16,6 +17,7 @@ const FILTERS: { key: MessageFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'doctor', label: 'Doctors' },
   { key: 'clinic', label: 'Clinics' },
+  { key: 'pharmacy', label: 'Pharmacies' },
 ];
 
 /**
@@ -37,23 +39,11 @@ export default function MessagesSearchBar({
       />
 
       {/* Filter Pills */}
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const isActive = activeFilter === f.key;
-          return (
-            <TouchableOpacity
-              key={f.key}
-              style={[styles.filterPill, isActive && styles.filterPillActive]}
-              onPress={() => onSelectFilter(f.key)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <FilterChipsBar
+        options={FILTERS}
+        selected={activeFilter}
+        onSelect={(key) => onSelectFilter(key as MessageFilter)}
+      />
     </View>
   );
 }
@@ -65,29 +55,5 @@ const styles = StyleSheet.create({
   },
   searchBarWrapper: {
     marginBottom: 12,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  filterPill: {
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.bgLight,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  filterPillActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  filterPillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textMuted,
-  },
-  filterPillTextActive: {
-    color: Colors.white,
   },
 });

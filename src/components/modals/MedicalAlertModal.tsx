@@ -38,6 +38,7 @@ export interface MedicalAlertModalProps {
   onSecondaryPress?: () => void;
   onClose?: () => void;
   isDestructive?: boolean;
+  autoCloseDelay?: number;
 }
 
 export default function MedicalAlertModal({
@@ -54,9 +55,29 @@ export default function MedicalAlertModal({
   onSecondaryPress,
   onClose,
   isDestructive = false,
+  autoCloseDelay,
 }: MedicalAlertModalProps) {
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  const onPrimaryPressRef = useRef(onPrimaryPress);
+  onPrimaryPressRef.current = onPrimaryPress;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!visible || !autoCloseDelay || autoCloseDelay <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (onPrimaryPressRef.current) {
+        onPrimaryPressRef.current();
+      } else if (onCloseRef.current) {
+        onCloseRef.current();
+      }
+    }, autoCloseDelay);
+
+    return () => clearTimeout(timer);
+  }, [visible, autoCloseDelay]);
 
   useEffect(() => {
     if (visible) {

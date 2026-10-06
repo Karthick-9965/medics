@@ -1,5 +1,6 @@
 import { ConversationItem } from '../components/bottomTab/messages/ConversationCard';
 import { ChatMessage } from '../components/bottomTab/messages/ChatDetailModal';
+export type { ChatMessage };
 
 export const CONVERSATIONS: ConversationItem[] = [
   // Doctors

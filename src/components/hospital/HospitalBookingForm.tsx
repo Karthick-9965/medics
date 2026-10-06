@@ -165,11 +165,11 @@ export default function HospitalBookingForm({
       {/* Summary & Price */}
       <PriceSummary
         items={[
-          { label: 'Hospital Registration & Consultation Fee', amount: `$${currentFee}.00` },
+          { label: 'Hospital Registration & Consultation Fee', amount: `₹${currentFee}.00` },
           { label: 'Token Reservation & Priority Queue', amount: 'FREE', isDiscount: true },
           { label: 'Hospital Reception Verification', amount: 'Included' },
         ]}
-        totalAmount={`$${currentFee}.00`}
+        totalAmount={`₹${currentFee}.00`}
       />
 
       {/* Book Button */}
@@ -183,7 +183,7 @@ export default function HospitalBookingForm({
           <ActivityIndicator color={Colors.white} size="small" />
         ) : (
           <Text style={styles.primaryBookBtnText}>
-            Confirm Hospital Token (${currentFee}.00)
+            Confirm Hospital Token (₹${currentFee}.00)
           </Text>
         )}
       </TouchableOpacity>
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: Colors.cardBgSecondary,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
   },
   deptSelectChipActive: {
     backgroundColor: Colors.primary,

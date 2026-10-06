@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { ScheduleStatus } from './ScheduleStatusTabs';
 import { getDoctorAvatar } from '../../../constants/scheduleData';
+import StatusBadge from '../../common/StatusBadge';
 
 export interface AppointmentItem {
   id: string;
@@ -87,28 +88,14 @@ export default function AppointmentCard({
 
         <View style={styles.scheduleDivider} />
 
-        <View style={styles.statusBadge}>
-          <View
-            style={[
-              styles.statusDot,
-              appointment.status === 'upcoming'
-                ? styles.dotUpcoming
-                : appointment.status === 'completed'
-                ? styles.dotCompleted
-                : styles.dotCanceled,
-            ]}
-          />
-          <Text
-            style={[
-              styles.statusLabel,
-              appointment.status === 'canceled' && styles.statusLabelCanceled,
-            ]}
-          >
-            {appointment.status === 'canceled'
+        <StatusBadge
+          status={appointment.status === 'upcoming' ? 'confirmed' : appointment.status}
+          label={
+            appointment.status === 'canceled'
               ? 'Canceled'
-              : appointment.statusLabel || (appointment.status === 'upcoming' ? 'Confirmed' : 'Completed')}
-          </Text>
-        </View>
+              : appointment.statusLabel || (appointment.status === 'upcoming' ? 'Confirmed' : 'Completed')
+          }
+        />
       </View>
 
       {/* Bottom: Action Buttons */}

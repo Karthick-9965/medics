@@ -18,8 +18,8 @@ interface ProfilePhotoModalProps {
 export default function ProfilePhotoModal({
   visible,
   avatarUri,
-  userName = 'Sathish Kumar',
-  userEmail = 'sathish.kumar@telemed.com',
+  userName = 'User',
+  userEmail = 'user@telemed.com',
   onAvatarPicked,
   onClose,
 }: ProfilePhotoModalProps) {

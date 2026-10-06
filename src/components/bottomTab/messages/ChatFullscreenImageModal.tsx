@@ -66,7 +66,7 @@ export default function ChatFullscreenImageModal({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.92)',
+    backgroundColor: Colors.modalOverlayHeavy,
     zIndex: 2000,
     elevation: 20,
   },

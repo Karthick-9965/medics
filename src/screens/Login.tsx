@@ -5,11 +5,11 @@ import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
 import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
-import SuccessModal from '../components/modals/SuccessModal';
+import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import ScreenHeader from '../components/common/ScreenHeader';
 import SocialLoginButtons from '../components/common/SocialLoginButtons';
 import { validateEmail, isEmailValidFormat } from '../utils/validation';
-import { getUserByEmail, saveLoginSession } from '../utils/storage';
+import { getUserByNameOrEmail, saveUser, saveLoginSession } from '../utils/storage';
 
 interface LoginProps {
   onBack?: () => void;
@@ -18,6 +18,7 @@ interface LoginProps {
   onForgotPassword?: () => void;
   initialEmail?: string;
   initialPassword?: string;
+  initialName?: string;
   navigation?: any;
   route?: any;
 }
@@ -29,11 +30,13 @@ export default function Login({
   onForgotPassword,
   initialEmail = '',
   initialPassword = '',
+  initialName = '',
   navigation,
   route,
 }: LoginProps) {
   const paramEmail = route?.params?.email || initialEmail;
   const paramPassword = route?.params?.password || initialPassword;
+  const paramName = route?.params?.name || initialName;
 
   const [email, setEmail] = useState(paramEmail);
   const [password, setPassword] = useState(paramPassword);
@@ -51,21 +54,29 @@ export default function Login({
     if (route?.params?.password) setPassword(route.params.password);
   }, [route?.params]);
 
-  const isValidEmail = isEmailValidFormat(email);
+  const isValidInput = email.includes('@')
+    ? isEmailValidFormat(email)
+    : email.trim().length >= 2;
 
   const handleLogin = async () => {
     let hasError = false;
+    const cleanIdentifier = email.trim();
 
-    // Email format validation
-    const errEmail = validateEmail(email);
-    if (errEmail) {
-      setEmailError(errEmail);
+    if (!cleanIdentifier) {
+      setEmailError('Please enter your email or name');
       hasError = true;
+    } else if (cleanIdentifier.includes('@')) {
+      const errEmail = validateEmail(cleanIdentifier);
+      if (errEmail) {
+        setEmailError(errEmail);
+        hasError = true;
+      } else {
+        setEmailError('');
+      }
     } else {
       setEmailError('');
     }
 
-    // Password validation (required)
     if (!password) {
       setIsWrongPassword(true);
       hasError = true;
@@ -76,24 +87,66 @@ export default function Login({
     if (hasError) return;
 
     setLoading(true);
-    // Find user in AsyncStorage
-    const user = await getUserByEmail(email);
-    setLoading(false);
+    // Find user by email or name in AsyncStorage
+    const existingUser = await getUserByNameOrEmail(cleanIdentifier);
 
-    if (!user || user.password !== password) {
-      setIsWrongPassword(true);
-      return;
+    let finalName = '';
+    let finalEmail = '';
+
+    if (existingUser) {
+      if (existingUser.password && existingUser.password !== password) {
+        setLoading(false);
+        setIsWrongPassword(true);
+        return;
+      }
+      finalName = existingUser.name;
+      finalEmail = existingUser.email;
+    } else {
+      // User entered a new identifier; determine appropriate display name
+      if (cleanIdentifier.includes('@')) {
+        const prefix = cleanIdentifier.split('@')[0];
+        finalName = paramName
+          ? paramName
+          : prefix
+              .split(/[._-]/)
+              .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+              .join(' ') || 'User';
+        finalEmail = cleanIdentifier;
+      } else {
+        finalName = cleanIdentifier;
+        finalEmail = `${cleanIdentifier.toLowerCase().replace(/\s+/g, '')}@telemed.com`;
+      }
+
+      // Auto-save this user so subsequent logins work seamlessly
+      await saveUser({ name: finalName, email: finalEmail, password });
     }
 
+    setLoading(false);
     setIsWrongPassword(false);
-    userRef.current = { name: user.name, email: user.email };
-    setLoggedInUser({ name: user.name, email: user.email });
+    userRef.current = { name: finalName, email: finalEmail };
+    setLoggedInUser({ name: finalName, email: finalEmail });
     hasNavigatedRef.current = false;
 
-    // Save session
-    await saveLoginSession(user.name, user.email);
+    // Save session to storage
+    await saveLoginSession(finalName, finalEmail);
 
     // Show Success Modal
+    setShowSuccessModal(true);
+  };
+
+  const handleSocialLogin = async (_provider: 'google' | 'apple' | 'facebook') => {
+    setLoading(true);
+    // When logging in with google, apple or facebook, the user name must be 'User'
+    const socialName = 'User';
+    const socialEmail = 'user@telemed.com';
+
+    userRef.current = { name: socialName, email: socialEmail };
+    setLoggedInUser({ name: socialName, email: socialEmail });
+    hasNavigatedRef.current = false;
+
+    await saveLoginSession(socialName, socialEmail);
+    setLoading(false);
+
     setShowSuccessModal(true);
   };
 
@@ -103,11 +156,11 @@ export default function Login({
 
     setShowSuccessModal(false);
     const currentUser = loggedInUser || userRef.current;
-    if (onLoginSuccess && currentUser) {
-      onLoginSuccess(currentUser.name, currentUser.email);
-    } else if (onLoginSuccess) {
-      const displayName = email.split('@')[0];
-      onLoginSuccess(displayName.charAt(0).toUpperCase() + displayName.slice(1), email);
+    const finalName = currentUser?.name || 'User';
+    const finalEmail = currentUser?.email || 'user@telemed.com';
+
+    if (onLoginSuccess) {
+      onLoginSuccess(finalName, finalEmail);
     } else {
       navigation?.replace('Main');
     }
@@ -129,18 +182,18 @@ export default function Login({
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Form */}
           <View style={styles.formSection}>
-            {/* Email Input */}
+            {/* Email / Username Input */}
             <InputField
               icon="mail-outline"
-              placeholder="Enter your email"
+              placeholder="Enter your email or username"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
                 setEmailError('');
                 setIsWrongPassword(false);
               }}
-              keyboardType="email-address"
-              isValid={isValidEmail}
+              autoCapitalize="none"
+              isValid={isValidInput}
               error={emailError}
             />
 
@@ -191,20 +244,22 @@ export default function Login({
 
           {/* Social Sign-in Buttons */}
           <SocialLoginButtons
-            onGooglePress={handleSuccessModalClose}
-            onApplePress={handleSuccessModalClose}
-            onFacebookPress={handleSuccessModalClose}
+            onGooglePress={() => handleSocialLogin('google')}
+            onApplePress={() => handleSocialLogin('apple')}
+            onFacebookPress={() => handleSocialLogin('facebook')}
           />
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Success Modal */}
-      <SuccessModal
+      <MedicalAlertModal
         visible={showSuccessModal}
+        type="success"
         title="Yeay! Welcome Back"
-        subtitle="Once again you login successfully into medidoc app"
-        buttonTitle="Go to home"
-        onPressButton={handleSuccessModalClose}
+        message="Once again you login successfully into medidoc app"
+        primaryButtonText="Go to home"
+        onPrimaryPress={handleSuccessModalClose}
+        onClose={handleSuccessModalClose}
         autoCloseDelay={3000}
       />
     </SafeAreaView>
@@ -215,25 +270,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.white,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 56,
-    backgroundColor: Colors.white,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  headerRightPlaceholder: {
-    width: 40,
   },
   keyboardView: {
     flex: 1,

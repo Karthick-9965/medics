@@ -72,14 +72,30 @@ export const Colors = {
   medicalPurpleLight: '#E0E7FF', // Indigo 100 badge bg
   medicalPurpleBg: '#F3E8FF', // Purple 100 light bg
 
-  // 6. Overlays
+  // 6. Overlays & Alpha Fills
+  transparent: 'transparent',
   modalOverlay: 'rgba(0, 0, 0, 0.5)',     // Standard backdrop overlay
   modalOverlayDark: 'rgba(0, 0, 0, 0.6)', // Deep backdrop overlay
   modalOverlayHeavy: 'rgba(0, 0, 0, 0.92)', // Fullscreen image/viewer backdrop
+  blackOverlay55: 'rgba(0, 0, 0, 0.55)',
+  blackOverlay65: 'rgba(0, 0, 0, 0.65)',
+  slateOverlay65: 'rgba(15, 23, 42, 0.65)',
+  whiteOverlay15: 'rgba(255, 255, 255, 0.15)',
   whiteOverlay18: 'rgba(255, 255, 255, 0.18)',
   whiteOverlay20: 'rgba(255, 255, 255, 0.20)',
+  whiteOverlay22: 'rgba(255, 255, 255, 0.22)',
+  whiteOverlay25: 'rgba(255, 255, 255, 0.25)',
   whiteOverlay35: 'rgba(255, 255, 255, 0.35)',
   whiteOverlay70: 'rgba(255, 255, 255, 0.70)',
+  whiteOverlay75: 'rgba(255, 255, 255, 0.75)',
   whiteOverlay85: 'rgba(255, 255, 255, 0.85)',
+  whiteOverlay95: 'rgba(255, 255, 255, 0.95)',
+  dangerBorderTint: 'rgba(239, 68, 68, 0.2)',
+
+  // 7. Clinical & Card Gradients
+  successMedium: '#15803D',
+  successBorderLight: '#DCFCE7',
+  medicalBlueDark: '#1E3A8A',
+  emeraldGreenDark: '#065F46',
 };
 

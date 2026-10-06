@@ -1,5 +1,6 @@
 import React from 'react';
-import LogoutModal from '../modals/LogoutModal';
+import MedicalAlertModal from '../modals/MedicalAlertModal';
+import { Colors } from '../../constants/Colors';
 import NotificationsModal from './NotificationsModal';
 import BookDoctorModal from './BookDoctorModal';
 import PharmacyOrderModal from './PharmacyOrderModal';
@@ -103,10 +104,19 @@ export default function HomeModalsContainer({
         onClose={onCloseSelectedArticle}
       />
 
-      <LogoutModal
+      <MedicalAlertModal
         visible={showLogoutModal}
-        onCancel={onCloseLogoutModal}
-        onConfirm={onConfirmLogout}
+        icon="log-out-outline"
+        iconColor={Colors.logoutRed}
+        iconBg={Colors.dangerBgLight}
+        title="Are you sure you want to log out?"
+        message="You will need to enter your email and password to sign back in."
+        primaryButtonText="Log Out"
+        secondaryButtonText="Cancel"
+        isDestructive
+        onPrimaryPress={onConfirmLogout}
+        onSecondaryPress={onCloseLogoutModal}
+        onClose={onCloseLogoutModal}
       />
     </>
   );

@@ -49,8 +49,12 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
     <SafeAreaView style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
-        <View />
-        <TouchableOpacity style={styles.skipButton} onPress={onFinish}>
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={onFinish}
+          activeOpacity={0.6}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>
@@ -102,25 +106,33 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    height: 50,
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
+    backgroundColor: Colors.transparent,
   },
   skipButton: {
-    padding: 8,
+    backgroundColor: Colors.transparent,
+    borderWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
   skipText: {
-    color: Colors.inputIcon,
+    color: Colors.primary,
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   imageContainer: {
     flex: 1,
-    width: '100%',
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    marginHorizontal: 20,
+    borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: Colors.bgLight,
+    marginTop: 4,
   },
   image: {
     width: '100%',

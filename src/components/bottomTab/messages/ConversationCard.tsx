@@ -18,7 +18,7 @@ export interface ConversationItem {
   time: string;
   unread: number;
   online: boolean;
-  type: 'doctor' | 'clinic';
+  type: 'doctor' | 'clinic' | 'pharmacy';
 }
 
 interface ConversationCardProps {

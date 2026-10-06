@@ -10,6 +10,7 @@ export interface DoctorCardProps {
   image: any;
   rating: string;
   distance: string;
+  hospital?: string;
   onPress?: () => void;
 }
 
@@ -19,6 +20,7 @@ export default function DoctorCard({
   image,
   rating,
   distance,
+  hospital,
   onPress,
 }: DoctorCardProps) {
   return (
@@ -28,6 +30,11 @@ export default function DoctorCard({
       </View>
       <Text style={styles.name} numberOfLines={1}>{name}</Text>
       <Text style={styles.specialization} numberOfLines={1}>{specialization}</Text>
+      {hospital ? (
+        <View style={styles.hospitalRow}>
+          <Text style={styles.hospitalText} numberOfLines={1}>{hospital}</Text>
+        </View>
+      ) : null}
       <View style={styles.bottomRow}>
         <RatingBadge rating={rating} />
         <DistanceBadge distance={distance} />
@@ -38,7 +45,7 @@ export default function DoctorCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: 140,
+    width: 148,
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -75,8 +82,26 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     textAlign: 'center',
     marginTop: 2,
+    marginBottom: 4,
+    width: '100%',
+  },
+  hospitalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.bgLight,
+    paddingHorizontal: 6,
+    paddingVertical: 2.5,
+    borderRadius: 6,
     marginBottom: 8,
     width: '100%',
+    gap: 3,
+  },
+  hospitalText: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: Colors.primary,
+    flexShrink: 1,
   },
   bottomRow: {
     flexDirection: 'row',

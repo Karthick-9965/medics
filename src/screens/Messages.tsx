@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -44,6 +44,13 @@ export default function Messages({
   const [showAudioCall, setShowAudioCall] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [showNotifModal, setShowNotifModal] = useState(false);
+  const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -236,13 +243,16 @@ export default function Messages({
     saveConversations(updatedConvs);
 
     // Auto-Reply simulation with real Push & in-app Notification and doctor card unread badge
+    const targetName = selectedChat.name;
+    const targetSpec = selectedChat.specialization;
     setTypingDoctorId(id);
-    setTimeout(async () => {
+    if (replyTimerRef.current) clearTimeout(replyTimerRef.current);
+    replyTimerRef.current = setTimeout(async () => {
       let reply: string;
       if (isPrescription || image) {
         reply = `Thank you for uploading your prescription sheet! I've reviewed the medications and dosage. Everything is verified and noted in your consultation chart. Please take them as advised and let me know if you have any questions.`;
       } else {
-        reply = generateDoctorReply(text, selectedChat.name, selectedChat.specialization);
+        reply = generateDoctorReply(text, targetName, targetSpec);
       }
 
       await handleReceiveDoctorMessage(id, reply);

@@ -6,7 +6,7 @@ import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
 import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
-import SuccessModal from '../components/modals/SuccessModal';
+import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import ScreenHeader from '../components/common/ScreenHeader';
 import { validateName, validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
 import { saveUser } from '../utils/storage';
@@ -207,12 +207,14 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink, navigatio
       </KeyboardAvoidingView>
 
       {/* Success Modal */}
-      <SuccessModal
+      <MedicalAlertModal
         visible={showSuccessModal}
+        type="success"
         title="Success"
-        subtitle="Your account has been successfully registered"
-        buttonTitle="Login"
-        onPressButton={handleSuccessModalClose}
+        message="Your account has been successfully registered"
+        primaryButtonText="Login"
+        onPrimaryPress={handleSuccessModalClose}
+        onClose={handleSuccessModalClose}
       />
     </SafeAreaView>
   );
@@ -222,25 +224,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.white,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: 56,
-    backgroundColor: Colors.white,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  headerRightPlaceholder: {
-    width: 40,
   },
   keyboardView: {
     flex: 1,

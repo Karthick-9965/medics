@@ -79,7 +79,7 @@ export default function HospitalDirectionsModal({
         setSelectedDepartment(hospital.departments[0]);
       }
       getLoginSession().then((session) => {
-        if (session?.name && session.name !== 'User' && session.name !== 'Sathish Kumar') {
+        if (session?.name) {
           setPatientName(session.name);
         } else {
           setPatientName('');
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   tabBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: Colors.whiteOverlay25,
   },
   tabBadgeText: {
     fontSize: 9.5,

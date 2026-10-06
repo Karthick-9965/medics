@@ -58,7 +58,7 @@ export default function BookingPatientStep({
               <Text style={styles.consultDesc}>{opt.desc}</Text>
             </View>
             <Text style={[styles.consultFee, isSelected && styles.consultFeeSelected]}>
-              ${opt.fee.toFixed(2)}
+              ₹{opt.fee.toFixed(2)}
             </Text>
           </TouchableOpacity>
         );

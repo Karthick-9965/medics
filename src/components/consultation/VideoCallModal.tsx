@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     right: 20,
   },
   topInfo: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: Colors.modalOverlayDark,
     padding: 12,
     borderRadius: 14,
     alignSelf: 'flex-start',
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: Colors.whiteOverlay20,
     alignItems: 'center',
     justifyContent: 'center',
   },

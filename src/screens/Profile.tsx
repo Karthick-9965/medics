@@ -22,8 +22,8 @@ import { getLoginSession } from '../utils/storage';
 import { useMedicalAlert } from '../hooks/useMedicalAlert';
 
 const INITIAL_PROFILE: UserProfileData = {
-  name: 'Sathish Kumar',
-  email: 'sathish.kumar@telemed.com',
+  name: 'User',
+  email: 'user@telemed.com',
   phone: '+1 (555) 019-2834',
   dob: '14 May 1996',
   age: '28',
@@ -67,6 +67,8 @@ export default function Profile({
   const [showPharmacyOrdersModal, setShowPharmacyOrdersModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showHelpCenterModal, setShowHelpCenterModal] = useState(false);
+  const [showPaymentMethodsModal, setShowPaymentMethodsModal] = useState(false);
+  const [defaultCardText, setDefaultCardText] = useState('Visa ending in 4242');
   const [appLanguage, setAppLanguage] = useState<SupportedLanguage>('en');
 
   const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
@@ -82,22 +84,22 @@ export default function Profile({
     const load = async () => {
       try {
         const session = await getLoginSession();
-        const activeName = userName || session?.name;
-        const activeEmail = userEmail || session?.email;
+        const activeName = userName || session?.name || 'User';
+        const activeEmail = userEmail || session?.email || 'user@telemed.com';
 
         const stored = await AsyncStorage.getItem('@user_profile_data');
         if (stored) {
           const parsed = JSON.parse(stored);
           setProfileData({
             ...parsed,
-            name: activeName || parsed.name || 'User',
-            email: activeEmail || parsed.email || 'user@telemed.com',
+            name: activeName,
+            email: activeEmail,
           });
         } else {
           setProfileData((prev) => ({
             ...prev,
-            name: activeName || prev.name,
-            email: activeEmail || prev.email,
+            name: activeName,
+            email: activeEmail,
           }));
         }
         const av = await AsyncStorage.getItem('@user_avatar');
@@ -105,6 +107,17 @@ export default function Profile({
 
         const lang = await AsyncStorage.getItem('@app_language');
         if (lang === 'ta' || lang === 'en') setAppLanguage(lang);
+
+        const savedCards = await AsyncStorage.getItem('@user_saved_cards');
+        if (savedCards) {
+          try {
+            const parsed = JSON.parse(savedCards);
+            const def = parsed.find((c: any) => c.isDefault) || parsed[0];
+            if (def) {
+              setDefaultCardText(`${def.cardType} ending in ${def.last4}`);
+            }
+          } catch (e) {}
+        }
       } catch (e) {
         console.log(e);
       }
@@ -120,12 +133,21 @@ export default function Profile({
       AsyncStorage.getItem('@app_language').then((lang) => {
         if (lang === 'ta' || lang === 'en') setAppLanguage(lang);
       });
+      getLoginSession().then((session) => {
+        if (session?.name) {
+          setProfileData((prev) => ({
+            ...prev,
+            name: userName || session.name,
+            email: userEmail || session.email || prev.email,
+          }));
+        }
+      });
       ImagePicker.getPendingResultAsync().then((pending) => {
         if (pending && 'assets' in pending && !pending.canceled && pending.assets && pending.assets.length > 0) {
           handleAvatarChange(pending.assets[0].uri);
         }
       }).catch((e) => console.log('Pending image error:', e));
-    }, [])
+    }, [userName, userEmail])
   );
 
   const displayName = profileData.name || userName || 'User';
@@ -223,15 +245,8 @@ export default function Profile({
             <ProfileMenuItem
               icon="card-outline"
               title="Payment Method"
-              subtitle="Visa ending in 4242"
-              onPress={() =>
-                showAlert({
-                  type: 'receipt',
-                  icon: 'card-outline',
-                  title: 'Payment Method',
-                  message: 'UPI & Visa Card ending in 4242 are verified and ready for instant checkout.',
-                })
-              }
+              subtitle={defaultCardText}
+              onPress={() => setShowPaymentMethodsModal(true)}
             />
           </View>
         </View>
@@ -290,6 +305,9 @@ export default function Profile({
         onCloseVaultModal={() => setShowVaultModal(false)}
         showPharmacyOrdersModal={showPharmacyOrdersModal}
         onClosePharmacyOrdersModal={() => setShowPharmacyOrdersModal(false)}
+        showPaymentMethodsModal={showPaymentMethodsModal}
+        onClosePaymentMethodsModal={() => setShowPaymentMethodsModal(false)}
+        onCardUpdated={(cardText) => setDefaultCardText(cardText)}
         showLanguageModal={showLanguageModal}
         currentLanguage={appLanguage}
         onCloseLanguageModal={() => setShowLanguageModal(false)}

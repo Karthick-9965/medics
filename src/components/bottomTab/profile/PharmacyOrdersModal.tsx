@@ -10,17 +10,15 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../../constants/Colors';
-import ModalHeader from '../../common/ModalHeader';
 import SearchBar from '../../common/SearchBar';
 import EmptyState from '../../common/EmptyState';
 import MedicalAlertModal, { MedicalAlertType } from '../../modals/MedicalAlertModal';
 import PharmacyOrderCard from '../../pharmacy/PharmacyOrderCard';
-import DeliveryProgressTracker from '../../pharmacy/DeliveryProgressTracker';
-import DeliveryAgentCard from '../../pharmacy/DeliveryAgentCard';
-import OrderReceiptBreakdown from '../../pharmacy/OrderReceiptBreakdown';
+import PharmacyOrderDetailModal from '../../pharmacy/PharmacyOrderDetailModal';
 
 export interface PharmacyOrderItem {
   name: string;
@@ -59,11 +57,11 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'in_transit',
     statusLabel: 'Out for Delivery',
     items: [
-      { name: 'Paracetamol 650mg (Strip of 15)', quantity: 2, price: '$7.00' },
-      { name: 'Amoxicillin 500mg (Strip of 10)', quantity: 1, price: '$12.50' },
-      { name: 'Vitamin C Chewable (Bottle of 30)', quantity: 1, price: '$9.00' },
+      { name: 'Paracetamol 650mg (Strip of 15)', quantity: 2, price: '₹7.00' },
+      { name: 'Amoxicillin 500mg (Strip of 10)', quantity: 1, price: '₹12.50' },
+      { name: 'Vitamin C Chewable (Bottle of 30)', quantity: 1, price: '₹9.00' },
     ],
-    totalAmount: '$28.50',
+    totalAmount: '₹28.50',
     paymentMethod: 'UPI Paid (Transaction #991024)',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Arriving in 15-20 mins',
@@ -83,10 +81,10 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'delivered',
     statusLabel: 'Delivered',
     items: [
-      { name: 'Atorvastatin 10mg (Strip of 10)', quantity: 2, price: '$16.00' },
-      { name: 'Aspirin 75mg Gastro-resistant', quantity: 1, price: '$5.50' },
+      { name: 'Atorvastatin 10mg (Strip of 10)', quantity: 2, price: '₹16.00' },
+      { name: 'Aspirin 75mg Gastro-resistant', quantity: 1, price: '₹5.50' },
     ],
-    totalAmount: '$21.50',
+    totalAmount: '₹21.50',
     paymentMethod: 'Cash on Delivery (Paid)',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Delivered on 28 Sep, 05:02 PM',
@@ -106,10 +104,10 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'delivered',
     statusLabel: 'Delivered',
     items: [
-      { name: 'Omeprazole 20mg Capsules', quantity: 1, price: '$8.00' },
-      { name: 'Electrolyte Hydration Powder (Pack of 5)', quantity: 2, price: '$6.00' },
+      { name: 'Omeprazole 20mg Capsules', quantity: 1, price: '₹8.00' },
+      { name: 'Electrolyte Hydration Powder (Pack of 5)', quantity: 2, price: '₹6.00' },
     ],
-    totalAmount: '$14.00',
+    totalAmount: '₹14.00',
     paymentMethod: 'Visa Card ending in 4242',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Delivered on 18 Sep, 11:22 AM',
@@ -257,12 +255,21 @@ export default function PharmacyOrdersModal({
       onRequestClose={onClose}
     >
       <View style={styles.container}>
-        {/* Header */}
-        <ModalHeader
-          title="Pharmacy Orders"
-          subtitle="Track medicines & live deliveries"
-          onClose={onClose}
-        />
+        {/* Header - Option 1 Style (Back Arrow + Left-Aligned Bold Title) */}
+        <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={onClose}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              activeOpacity={0.7}
+              accessibilityLabel="Back to Profile"
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Pharmacy Orders</Text>
+          </View>
+        </SafeAreaView>
 
         {/* Tab Filters */}
         <View style={styles.tabContainer}>
@@ -361,96 +368,13 @@ export default function PharmacyOrdersModal({
         </ScrollView>
 
         {/* Live Tracking / Order Details Overlay */}
-        {selectedOrder && (
-          <View style={styles.detailsOverlay}>
-            <View style={styles.detailsModalContent}>
-              {/* Overlay Header */}
-              <View style={styles.detailsHeader}>
-                <View>
-                  <Text style={styles.detailsHeaderTitle}>Order Tracker</Text>
-                  <Text style={styles.detailsHeaderSub}>{selectedOrder.id}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.detailsCloseBtn}
-                  onPress={() => setSelectedOrder(null)}
-                >
-                  <Ionicons name="close" size={22} color={Colors.textDark} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.detailsBody}
-              >
-                {/* Pharmacy Summary Banner */}
-                <View style={styles.pharmacyBanner}>
-                  <View style={styles.bannerIconBox}>
-                    <Ionicons name="storefront-outline" size={22} color={Colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.bannerPharmacyName}>
-                      {selectedOrder.pharmacyName}
-                    </Text>
-                    <Text style={styles.bannerPharmacyAddress}>
-                      {selectedOrder.pharmacyAddress}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.callIconBtn}
-                    onPress={() => handleCallPharmacy(selectedOrder.pharmacyPhone)}
-                  >
-                    <Ionicons name="call" size={16} color={Colors.primary} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Reusable 4-Step Visual Timeline */}
-                <DeliveryProgressTracker
-                  trackingStep={selectedOrder.trackingStep}
-                  eta={selectedOrder.eta}
-                  deliveryAddress={selectedOrder.deliveryAddress}
-                />
-
-                {/* Reusable Delivery Agent Card */}
-                {selectedOrder.deliveryAgent && (
-                  <DeliveryAgentCard
-                    agent={selectedOrder.deliveryAgent}
-                    onCall={handleCallDeliveryAgent}
-                  />
-                )}
-
-                {/* Reusable Order Items Breakdown */}
-                <OrderReceiptBreakdown
-                  items={selectedOrder.items}
-                  totalAmount={selectedOrder.totalAmount}
-                  paymentMethod={selectedOrder.paymentMethod}
-                />
-
-                {/* Modal Action Buttons */}
-                <View style={styles.modalActionButtons}>
-                  <TouchableOpacity
-                    style={styles.repeatOrderBtn}
-                    onPress={() => handleReorder(selectedOrder)}
-                  >
-                    <Ionicons name="repeat-outline" size={17} color={Colors.white} />
-                    <Text style={styles.repeatOrderBtnText}>Order Again</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.supportBtn}
-                    onPress={() => handleCallPharmacy(selectedOrder.pharmacyPhone)}
-                  >
-                    <Ionicons
-                      name="chatbubble-ellipses-outline"
-                      size={17}
-                      color={Colors.primary}
-                    />
-                    <Text style={styles.supportBtnText}>Pharmacy Help</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            </View>
-          </View>
-        )}
+        <PharmacyOrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onCallPharmacy={handleCallPharmacy}
+          onCallDeliveryAgent={handleCallDeliveryAgent}
+          onReorder={handleReorder}
+        />
 
         {/* Medical Alert Modal */}
         <MedicalAlertModal
@@ -471,6 +395,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.bgLight,
+  },
+  headerSafeArea: {
+    backgroundColor: Colors.white,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+    backgroundColor: Colors.white,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.textDark,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -529,118 +475,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 30,
     gap: 14,
-  },
-  detailsOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-    zIndex: 1000,
-  },
-  detailsModalContent: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
-    paddingBottom: 20,
-  },
-  detailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  detailsHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.textDark,
-  },
-  detailsHeaderSub: {
-    fontSize: 12.5,
-    color: Colors.secondary,
-    marginTop: 2,
-    fontWeight: '600',
-  },
-  detailsCloseBtn: {
-    padding: 6,
-    borderRadius: 20,
-    backgroundColor: Colors.bgLight,
-  },
-  detailsBody: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 16,
-  },
-  pharmacyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.bgLight,
-    padding: 12,
-    borderRadius: 14,
-    gap: 12,
-  },
-  bannerIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bannerPharmacyName: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  bannerPharmacyAddress: {
-    fontSize: 11.5,
-    color: Colors.secondary,
-    marginTop: 2,
-  },
-  callIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalActionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  repeatOrderBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: Colors.primary,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  repeatOrderBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.white,
-  },
-  supportBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: Colors.accentLight,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  supportBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
   },
 });

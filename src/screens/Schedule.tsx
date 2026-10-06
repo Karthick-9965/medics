@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import { INITIAL_APPOINTMENTS, getDoctorAvatar } from '../constants/scheduleData';
@@ -17,6 +18,9 @@ import {
 
 interface ScheduleProps {
   navigation?: any;
+  route?: any;
+  fromProfile?: boolean;
+  onNavigateBackToProfile?: () => void;
   onNavigateToMessages?: () => void;
   onNavigateToAmbulance?: () => void;
   onNavigateToPharmacy?: () => void;
@@ -24,10 +28,26 @@ interface ScheduleProps {
 
 export default function Schedule({
   navigation,
+  route,
+  fromProfile: propFromProfile,
+  onNavigateBackToProfile,
   onNavigateToMessages,
   onNavigateToAmbulance,
   onNavigateToPharmacy,
 }: ScheduleProps = {}) {
+  const fromProfile = propFromProfile || route?.params?.fromProfile;
+
+  const handleBackPress = () => {
+    if (navigation?.setParams) {
+      navigation.setParams({ fromProfile: false });
+    }
+    if (onNavigateBackToProfile) {
+      onNavigateBackToProfile();
+    } else if (navigation) {
+      navigation.navigate('Main', { screen: 'ProfileTab' });
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<ScheduleStatus>('upcoming');
   const [appointments, setAppointments] = useState<AppointmentItem[]>(INITIAL_APPOINTMENTS);
   const [rebookTarget, setRebookTarget] = useState<AppointmentItem | null>(null);
@@ -41,27 +61,39 @@ export default function Schedule({
 
   const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const storedStr = await AsyncStorage.getItem('@app_appointments');
-        if (storedStr) {
-          const stored: AppointmentItem[] = JSON.parse(storedStr);
-          const restored = stored.map((a) => ({
-            ...a,
-            avatar: getDoctorAvatar(a.doctorName, a.avatar),
-          }));
-          setAppointments(restored);
-        } else {
-          setAppointments(INITIAL_APPOINTMENTS);
-          await AsyncStorage.setItem('@app_appointments', JSON.stringify(INITIAL_APPOINTMENTS));
-        }
-      } catch (e) {
-        console.log(e);
+  const loadAppointments = async () => {
+    try {
+      const storedStr = await AsyncStorage.getItem('@app_appointments');
+      if (storedStr) {
+        const stored: AppointmentItem[] = JSON.parse(storedStr);
+        const restored = stored.map((a) => ({
+          ...a,
+          avatar: getDoctorAvatar(a.doctorName, a.avatar),
+          patientName: (a.patientName && a.patientName !== 'Sathish Kumar') ? a.patientName : 'User',
+        }));
+        setAppointments(restored);
+      } else {
+        setAppointments(INITIAL_APPOINTMENTS);
+        await AsyncStorage.setItem('@app_appointments', JSON.stringify(INITIAL_APPOINTMENTS));
       }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    loadAppointments();
+    const unsubBlur = navigation?.addListener?.('blur', () => {
+      navigation?.setParams?.({ fromProfile: false });
+    });
+    const unsubFocus = navigation?.addListener?.('focus', () => {
+      loadAppointments();
+    });
+    return () => {
+      unsubBlur?.();
+      unsubFocus?.();
     };
-    load();
-  }, []);
+  }, [navigation]);
 
   const persist = async (list: AppointmentItem[]) => {
     try {
@@ -220,8 +252,20 @@ export default function Schedule({
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Schedule</Text>
+        <View style={[styles.header, fromProfile && styles.headerWithBack]}>
+          {fromProfile && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackPress}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Back to Profile"
+            >
+              <Ionicons name="arrow-back" size={24} color={Colors.textDark} />
+            </TouchableOpacity>
+          )}
+          <Text style={[styles.headerTitle, fromProfile && styles.headerTitleWithBack]}>
+            {fromProfile ? 'Appointment History' : 'Schedule'}
+          </Text>
         </View>
 
         {/* Status Tab Switcher */}
@@ -343,10 +387,23 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 16,
   },
+  headerWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: Colors.textDark,
+  },
+  headerTitleWithBack: {
+    flex: 1,
   },
   scrollList: {
     flex: 1,

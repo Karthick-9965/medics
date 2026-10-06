@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { PharmacyOrder } from '../bottomTab/profile/PharmacyOrdersModal';
+import StatusBadge from '../common/StatusBadge';
 
 export interface PharmacyOrderCardProps {
   order: PharmacyOrder;
@@ -38,26 +39,10 @@ export default function PharmacyOrderCard({
           </View>
         </View>
 
-        <View
-          style={[
-            styles.statusPill,
-            isDelivered ? styles.statusPillDelivered : styles.statusPillInTransit,
-          ]}
-        >
-          <Ionicons
-            name={isDelivered ? 'checkmark-circle' : 'bicycle'}
-            size={13}
-            color={isDelivered ? Colors.successGreen : Colors.infoBlueDark}
-          />
-          <Text
-            style={[
-              styles.statusText,
-              isDelivered ? styles.statusTextDelivered : styles.statusTextInTransit,
-            ]}
-          >
-            {order.statusLabel}
-          </Text>
-        </View>
+        <StatusBadge
+          status={order.status === 'delivered' ? 'delivered' : 'in_transit'}
+          label={order.statusLabel}
+        />
       </View>
 
       {/* 2. Medicine Items Summary */}
@@ -169,30 +154,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.secondary,
     marginTop: 2,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  statusPillDelivered: {
-    backgroundColor: Colors.successBgLight,
-  },
-  statusPillInTransit: {
-    backgroundColor: Colors.infoBlueBg,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  statusTextDelivered: {
-    color: Colors.successDark,
-  },
-  statusTextInTransit: {
-    color: Colors.infoBlueDark,
   },
   itemsBox: {
     backgroundColor: Colors.bgLight,

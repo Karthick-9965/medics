@@ -72,7 +72,7 @@ export default function VaultDocumentViewer({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.92)',
+    backgroundColor: Colors.modalOverlayHeavy,
     zIndex: 2000,
     elevation: 20,
   },
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.15)',
+    borderBottomColor: Colors.whiteOverlay15,
   },
   headerInfo: {
     flex: 1,
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
+    color: Colors.whiteOverlay70,
     marginTop: 2,
   },
   closeBtn: {

@@ -18,6 +18,9 @@ export default function DoctorBookingHeaderCard({ doctor }: DoctorBookingHeaderC
       <View style={styles.info}>
         <Text style={styles.name}>{doctor.name}</Text>
         <Text style={styles.spec}>{doctor.specialization}</Text>
+        {doctor.hospital ? (
+          <Text style={styles.hospitalText} numberOfLines={1}>{doctor.hospital}</Text>
+        ) : null}
         <View style={styles.metaRow}>
           <RatingBadge rating={doctor.rating} variant="gold" />
           <Text style={styles.dot}>•</Text>
@@ -57,6 +60,13 @@ const styles = StyleSheet.create({
   spec: {
     fontSize: 12,
     color: Colors.secondary,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  hospitalText: {
+    fontSize: 11.5,
+    color: Colors.primary,
+    fontWeight: '600',
     marginTop: 2,
     marginBottom: 4,
   },

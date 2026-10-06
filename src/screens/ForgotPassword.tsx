@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
-import SuccessModal from '../components/modals/SuccessModal';
+import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import { ForgotEmailStep, ForgotOtpStep, ForgotNewPasswordStep } from '../components/auth/ForgotPasswordComponents';
 import { validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
 import { getUserByEmail, updateUserPassword } from '../utils/storage';
@@ -226,12 +226,14 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess, navigati
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <SuccessModal
+      <MedicalAlertModal
         visible={showSuccessModal}
+        type="success"
         title="Password Reset Successful"
-        subtitle="You can now sign in with your new password."
-        buttonText="Back to Login"
-        onButtonPress={handleModalClose}
+        message="You can now sign in with your new password."
+        primaryButtonText="Back to Login"
+        onPrimaryPress={handleModalClose}
+        onClose={handleModalClose}
       />
     </SafeAreaView>
   );

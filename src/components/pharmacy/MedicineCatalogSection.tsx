@@ -121,7 +121,7 @@ export default function MedicineCatalogSection({
         <View style={styles.cartBar}>
           <View>
             <Text style={styles.cartBarItems}>{cartItemsCount} items added</Text>
-            <Text style={styles.cartBarTotal}>${totalAmount}</Text>
+            <Text style={styles.cartBarTotal}>₹{totalAmount}</Text>
           </View>
           <TouchableOpacity
             style={styles.viewCartBtn}

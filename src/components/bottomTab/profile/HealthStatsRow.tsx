@@ -27,7 +27,7 @@ export default function HealthStatsRow({
         <View
           style={[
             styles.iconBadge,
-            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.dangerBgTint },
+            { backgroundColor: isTealTheme ? Colors.whiteOverlay22 : Colors.dangerBgTint },
           ]}
         >
           <Ionicons
@@ -51,7 +51,7 @@ export default function HealthStatsRow({
         <View
           style={[
             styles.iconBadge,
-            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.warningBgLight },
+            { backgroundColor: isTealTheme ? Colors.whiteOverlay22 : Colors.warningBgLight },
           ]}
         >
           <Ionicons
@@ -75,7 +75,7 @@ export default function HealthStatsRow({
         <View
           style={[
             styles.iconBadge,
-            { backgroundColor: isTealTheme ? 'rgba(255, 255, 255, 0.22)' : Colors.accentLight },
+            { backgroundColor: isTealTheme ? Colors.whiteOverlay22 : Colors.accentLight },
           ]}
         >
           <Ionicons
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statsContainerTeal: {
-    backgroundColor: 'transparent',
+    backgroundColor: Colors.transparent,
     borderWidth: 0,
     paddingHorizontal: 10,
     marginTop: 10,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   statLabelTeal: {
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: Colors.whiteOverlay85,
   },
   statValue: {
     fontSize: 15,
@@ -164,6 +164,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.borderLight,
   },
   statDividerTeal: {
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: Colors.whiteOverlay35,
   },
 });

@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, FlatList, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
 import { DOCTORS_DATA, DoctorItem } from '../constants/doctorsData';
 import { PHARMACIES_DATA, PharmacyItem } from '../constants/pharmaciesData';
 import { HOSPITALS_DATA, HospitalItem } from '../constants/hospitalsData';
 import { ARTICLES_DATA, ArticleItem } from '../constants/articlesData';
-import BookDoctorModal from '../components/home/BookDoctorModal';
-import PharmacyOrderModal from '../components/home/PharmacyOrderModal';
-import HospitalDirectionsModal from '../components/home/HospitalDirectionsModal';
-import ArticleDetailModal from '../components/modals/ArticleDetailModal';
+import { INITIAL_CHAT_MESSAGES } from '../constants/messagesData';
+import { matchesDoctorSearch, matchesHospitalSearch } from '../utils/searchUtils';
+import { generateDoctorReply } from '../utils/doctorReplyEngine';
+import { sendDoctorMessageNotification } from '../services/notificationManager';
+import SeeAllModalsContainer from '../components/seeall/SeeAllModalsContainer';
+import { ChatMessage } from '../constants/messagesData';
 import FilterChipsBar from '../components/common/FilterChipsBar';
 import ScreenHeader from '../components/common/ScreenHeader';
 import SearchBar from '../components/common/SearchBar';
@@ -25,6 +28,8 @@ interface SeeAllScreenProps {
   initialQuery?: string;
   onBack?: () => void;
   onSelectDoctor?: (doctor: DoctorItem) => void;
+  onCallDoctor?: (doctor: DoctorItem) => void;
+  onChatDoctor?: (doctor: DoctorItem) => void;
   onEmergencyPress?: () => void;
   onNavigateToSchedule?: () => void;
   navigation?: any;
@@ -40,6 +45,8 @@ export default function SeeAllScreen({
   initialQuery,
   onBack,
   onSelectDoctor,
+  onCallDoctor,
+  onChatDoctor,
   onEmergencyPress,
   onNavigateToSchedule,
   navigation,
@@ -56,6 +63,207 @@ export default function SeeAllScreen({
   const [pharmacyModalMode, setPharmacyModalMode] = useState<'prescription' | 'catalog'>('catalog');
   const [directionsHospital, setDirectionsHospital] = useState<HospitalItem | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
+
+  // Audio / Video Call & In-App Doctor Chat State
+  const [callingDoctor, setCallingDoctor] = useState<DoctorItem | null>(null);
+  const [videoCallingDoctor, setVideoCallingDoctor] = useState<DoctorItem | null>(null);
+  const [chatDoctor, setChatDoctor] = useState<DoctorItem | null>(null);
+  const [chatMessages, setChatMessages] = useState<{ [id: string]: ChatMessage[] }>(INITIAL_CHAT_MESSAGES);
+  const [isDoctorTyping, setIsDoctorTyping] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@app_chat_messages').then((stored) => {
+      if (stored) {
+        try {
+          setChatMessages({ ...INITIAL_CHAT_MESSAGES, ...JSON.parse(stored) });
+        } catch (e) {
+          console.log('Error parsing stored chat messages:', e);
+        }
+      }
+    });
+  }, []);
+
+  const handleCallDoctor = (doctor: DoctorItem) => {
+    if (onCallDoctor) {
+      onCallDoctor(doctor);
+    } else {
+      setCallingDoctor(doctor);
+    }
+  };
+
+  const handleChatDoctor = (doctor: DoctorItem) => {
+    if (onChatDoctor) {
+      onChatDoctor(doctor);
+    } else {
+      setChatDoctor(doctor);
+    }
+  };
+
+  const handleSendMessageToDoctor = async (
+    text: string,
+    image?: string,
+    isPrescription?: boolean,
+    prescriptionName?: string
+  ) => {
+    if (!chatDoctor) return;
+    const docId = chatDoctor.id;
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newMsg: ChatMessage = {
+      sender: 'user',
+      text,
+      time: nowTime,
+      image,
+      isPrescription,
+      prescriptionName,
+    };
+
+    const currentDocMessages = chatMessages[docId] || [
+      {
+        sender: 'doctor',
+        text: `Hello! I am ${chatDoctor.name}, ${chatDoctor.specialization} at ${chatDoctor.hospital || 'Care Hospital'}. How can I assist you with your health today?`,
+        time: nowTime,
+      },
+    ];
+
+    const updated = [...currentDocMessages, newMsg];
+    const newChatState = { ...chatMessages, [docId]: updated };
+    setChatMessages(newChatState);
+    await AsyncStorage.setItem('@app_chat_messages', JSON.stringify(newChatState));
+
+    setIsDoctorTyping(true);
+    setTimeout(async () => {
+      setIsDoctorTyping(false);
+      const replyText = generateDoctorReply(text, chatDoctor.name, chatDoctor.specialization);
+      const replyMsg: ChatMessage = {
+        sender: 'doctor',
+        text: replyText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const finalMessages = [...updated, replyMsg];
+      const finalState = { ...chatMessages, [docId]: finalMessages };
+      setChatMessages(finalState);
+      await AsyncStorage.setItem('@app_chat_messages', JSON.stringify(finalState));
+      await sendDoctorMessageNotification({
+        senderName: chatDoctor.name,
+        specialization: chatDoctor.specialization,
+        message: replyText,
+        conversationId: docId,
+      });
+    }, 1200);
+  };
+
+  const handleDeleteChatMessage = (messageIndex: number) => {
+    if (!chatDoctor) return;
+    const docId = chatDoctor.id;
+    const updated = (chatMessages[docId] || []).filter((_, idx) => idx !== messageIndex);
+    const newState = { ...chatMessages, [docId]: updated };
+    setChatMessages(newState);
+    AsyncStorage.setItem('@app_chat_messages', JSON.stringify(newState));
+  };
+
+  // Pharmacy Call & Chat Consultation State
+  const [callingPharmacy, setCallingPharmacy] = useState<PharmacyItem | null>(null);
+  const [chatPharmacy, setChatPharmacy] = useState<PharmacyItem | null>(null);
+
+  const handleCallPharmacy = (pharmacy: PharmacyItem) => {
+    setCallingPharmacy(pharmacy);
+  };
+
+  const handleChatPharmacy = (pharmacy: PharmacyItem) => {
+    setChatPharmacy(pharmacy);
+  };
+
+  const handleSendPharmacyMessage = async (
+    text: string,
+    image?: string,
+    isPrescription?: boolean,
+    prescriptionName?: string
+  ) => {
+    if (!chatPharmacy) return;
+    const pharmacyChatId = `pharmacy_${chatPharmacy.id}`;
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newMsg: ChatMessage = {
+      sender: 'user',
+      text,
+      time: nowTime,
+      image,
+      isPrescription,
+      prescriptionName,
+    };
+
+    const currentMessages = chatMessages[pharmacyChatId] || [
+      {
+        sender: 'doctor',
+        text: `Welcome to ${chatPharmacy.name}! Our licensed pharmacist is available to answer your prescription questions or prepare medicine delivery. How can we help?`,
+        time: nowTime,
+      },
+    ];
+
+    const updated = [...currentMessages, newMsg];
+    const newChatState = { ...chatMessages, [pharmacyChatId]: updated };
+    setChatMessages(newChatState);
+    await AsyncStorage.setItem('@app_chat_messages', JSON.stringify(newChatState));
+
+    setIsDoctorTyping(true);
+    setTimeout(async () => {
+      setIsDoctorTyping(false);
+      let replyText = `Thank you for contacting ${chatPharmacy.name}. Your medicine inquiry has been received. Standard doorstep delivery takes ${chatPharmacy.deliveryTime || '15-25 mins'}.`;
+      if (isPrescription) {
+        replyText = `We have received your prescription document at ${chatPharmacy.name}. Our pharmacist is validating dosage and preparing your order now.`;
+      }
+      const replyMsg: ChatMessage = {
+        sender: 'doctor',
+        text: replyText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const finalMessages = [...updated, replyMsg];
+      const finalState = { ...chatMessages, [pharmacyChatId]: finalMessages };
+      setChatMessages(finalState);
+      await AsyncStorage.setItem('@app_chat_messages', JSON.stringify(finalState));
+      await sendDoctorMessageNotification({
+        senderName: chatPharmacy.name,
+        specialization: 'Licensed Pharmacy Desk',
+        message: replyText,
+        conversationId: pharmacyChatId,
+      });
+    }, 1200);
+  };
+
+  const handleDeletePharmacyChatMessage = (messageIndex: number) => {
+    if (!chatPharmacy) return;
+    const pharmacyChatId = `pharmacy_${chatPharmacy.id}`;
+    const updated = (chatMessages[pharmacyChatId] || []).filter((_, idx) => idx !== messageIndex);
+    const newState = { ...chatMessages, [pharmacyChatId]: updated };
+    setChatMessages(newState);
+    AsyncStorage.setItem('@app_chat_messages', JSON.stringify(newState));
+  };
+
+  // Hospital Reception Call State
+  const [callingHospital, setCallingHospital] = useState<HospitalItem | null>(null);
+
+  const handleCallHospital = (hospital: HospitalItem) => {
+    const phone = hospital.receptionPhone || hospital.emergencyPhone || '+1 (555) 012-4000';
+    const cleanNumber = phone.replace(/[^0-9+]/g, '');
+    Linking.openURL(`tel:${cleanNumber}`).catch(() => {
+      // Fallback to in-app audio call simulation if device has no cellular dialer
+      setCallingHospital(hospital);
+    });
+  };
+
+  const handleMailHospital = (hospital: HospitalItem) => {
+    const email = hospital.email || 'reception@hospitalcare.org';
+    const subject = encodeURIComponent(`Inquiry - ${hospital.name} Reception`);
+    const body = encodeURIComponent(
+      `Dear ${hospital.name} Reception Desk,\n\nI would like to inquire about hospital services and doctor appointments.\n\nThank you,\nPatient`
+    );
+    Linking.openURL(`mailto:${email}?subject=${subject}&body=${body}`).catch((err) => {
+      console.log('Error opening mail client:', err);
+    });
+  };
 
   const getTitle = () => {
     switch (category) {
@@ -79,11 +287,7 @@ export default function SeeAllScreen({
     const q = searchQuery.toLowerCase().trim();
     if (category === 'doctor') {
       const list = DOCTORS_DATA.filter((d) => {
-        const matchesQ =
-          !q ||
-          d.name.toLowerCase().includes(q) ||
-          d.specialization.toLowerCase().includes(q) ||
-          (d.hospital && d.hospital.toLowerCase().includes(q));
+        const matchesQ = !q || matchesDoctorSearch(d, searchQuery);
         const matchesF =
           activeFilter === 'All' ||
           d.specialization.toLowerCase().includes(activeFilter.toLowerCase());
@@ -100,7 +304,7 @@ export default function SeeAllScreen({
     }
     if (category === 'hospital') {
       return HOSPITALS_DATA.filter((h) => {
-        const matchesQ = !q || h.name.toLowerCase().includes(q) || (h.address && h.address.toLowerCase().includes(q));
+        const matchesQ = !q || matchesHospitalSearch(h, searchQuery);
         const matchesF =
           activeFilter === 'All' ||
           (activeFilter === 'Emergency 24/7' &&
@@ -131,6 +335,8 @@ export default function SeeAllScreen({
             doctor={item}
             onPress={() => (onSelectDoctor ? onSelectDoctor(item) : setBookingDoctor(item))}
             onBookPress={() => (onSelectDoctor ? onSelectDoctor(item) : setBookingDoctor(item))}
+            onCallPress={() => handleCallDoctor(item)}
+            onChatPress={() => handleChatDoctor(item)}
           />
         );
       case 'article':
@@ -158,6 +364,8 @@ export default function SeeAllScreen({
                 setPharmacyModalMode('catalog');
               },
             }}
+            onCallPress={() => handleCallPharmacy(item)}
+            onChatPress={() => handleChatPharmacy(item)}
             onPress={() => {
               setOrderingPharmacy(item);
               setPharmacyModalMode('catalog');
@@ -180,6 +388,8 @@ export default function SeeAllScreen({
               icon: 'calendar',
               onPress: () => setDirectionsHospital(item),
             }}
+            onCallPress={() => handleCallHospital(item)}
+            onMailPress={() => handleMailHospital(item)}
             onPress={() => setDirectionsHospital(item)}
           />
         );
@@ -232,35 +442,65 @@ export default function SeeAllScreen({
         }
       />
 
-      {/* 5. Detail & Booking Modals */}
-      <BookDoctorModal
-        visible={!!bookingDoctor}
-        doctor={bookingDoctor}
-        onClose={() => setBookingDoctor(null)}
+      {/* Modals & Consultations Container */}
+      <SeeAllModalsContainer
+        bookingDoctor={bookingDoctor}
+        onCloseBookingDoctor={() => setBookingDoctor(null)}
         onNavigateToSchedule={() => {
           setBookingDoctor(null);
           if (onNavigateToSchedule) onNavigateToSchedule();
         }}
-      />
-
-      <PharmacyOrderModal
-        visible={!!orderingPharmacy}
-        pharmacy={orderingPharmacy}
-        initialMode={pharmacyModalMode}
-        onClose={() => setOrderingPharmacy(null)}
-      />
-
-      <HospitalDirectionsModal
-        visible={!!directionsHospital}
-        hospital={directionsHospital}
+        orderingPharmacy={orderingPharmacy}
+        pharmacyModalMode={pharmacyModalMode}
+        onCloseOrderingPharmacy={() => setOrderingPharmacy(null)}
+        directionsHospital={directionsHospital}
+        onCloseDirectionsHospital={() => setDirectionsHospital(null)}
         onEmergencyPress={onEmergencyPress || (() => navigation?.navigate('Ambulance'))}
-        onClose={() => setDirectionsHospital(null)}
-      />
-
-      <ArticleDetailModal
-        visible={!!selectedArticle}
-        article={selectedArticle}
-        onClose={() => setSelectedArticle(null)}
+        selectedArticle={selectedArticle}
+        onCloseSelectedArticle={() => setSelectedArticle(null)}
+        callingDoctor={callingDoctor}
+        onEndCallingDoctor={() => setCallingDoctor(null)}
+        onSwitchDoctorToVideo={() => {
+          const doc = callingDoctor;
+          setCallingDoctor(null);
+          setVideoCallingDoctor(doc);
+        }}
+        videoCallingDoctor={videoCallingDoctor}
+        onEndVideoDoctor={() => setVideoCallingDoctor(null)}
+        onSwitchDoctorToAudio={() => {
+          const doc = videoCallingDoctor;
+          setVideoCallingDoctor(null);
+          setCallingDoctor(doc);
+        }}
+        chatDoctor={chatDoctor}
+        chatMessages={chatMessages}
+        isDoctorTyping={isDoctorTyping}
+        onCloseChatDoctor={() => setChatDoctor(null)}
+        onSendMessageToDoctor={handleSendMessageToDoctor}
+        onDeleteChatMessage={handleDeleteChatMessage}
+        onAudioCallDoctor={() => {
+          const doc = chatDoctor;
+          setChatDoctor(null);
+          setCallingDoctor(doc);
+        }}
+        onVideoCallDoctor={() => {
+          const doc = chatDoctor;
+          setChatDoctor(null);
+          setVideoCallingDoctor(doc);
+        }}
+        callingPharmacy={callingPharmacy}
+        onEndCallingPharmacy={() => setCallingPharmacy(null)}
+        chatPharmacy={chatPharmacy}
+        onCloseChatPharmacy={() => setChatPharmacy(null)}
+        onSendPharmacyMessage={handleSendPharmacyMessage}
+        onDeletePharmacyChatMessage={handleDeletePharmacyChatMessage}
+        onAudioCallPharmacy={() => {
+          const ph = chatPharmacy;
+          setChatPharmacy(null);
+          setCallingPharmacy(ph);
+        }}
+        callingHospital={callingHospital}
+        onEndCallingHospital={() => setCallingHospital(null)}
       />
     </SafeAreaView>
   );

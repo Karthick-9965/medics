@@ -51,6 +51,15 @@ export const getUserByEmail = async (email: string): Promise<User | null> => {
   return found || null;
 };
 
+export const getUserByNameOrEmail = async (identifier: string): Promise<User | null> => {
+  const users = await getUsers();
+  const clean = identifier.trim().toLowerCase();
+  const found = users.find(
+    (u) => u.email.toLowerCase() === clean || u.name.toLowerCase() === clean
+  );
+  return found || null;
+};
+
 export const updateUserPassword = async (email: string, newPassword: string): Promise<boolean> => {
   try {
     const users = await getUsers();
@@ -70,6 +79,22 @@ export const saveLoginSession = async (userOrName: User | string, email?: string
   try {
     const user: User = typeof userOrName === 'string' ? { name: userOrName, email: email || '' } : userOrName;
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(user));
+
+    // Synchronize active profile name & email
+    try {
+      const storedProfile = await AsyncStorage.getItem('@user_profile_data');
+      const parsed = storedProfile ? JSON.parse(storedProfile) : {};
+      await AsyncStorage.setItem(
+        '@user_profile_data',
+        JSON.stringify({
+          ...parsed,
+          name: user.name,
+          email: user.email || parsed.email || `${user.name.toLowerCase().replace(/\s+/g, '')}@telemed.com`,
+        })
+      );
+    } catch (e) {
+      // ignore
+    }
   } catch (e) {
     console.error('Failed to save login session', e);
   }
@@ -88,6 +113,7 @@ export const getLoginSession = async (): Promise<User | null> => {
 export const clearLoginSession = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(SESSION_KEY);
+    await AsyncStorage.removeItem('@user_profile_data');
   } catch (e) {
     console.error('Failed to clear login session', e);
   }

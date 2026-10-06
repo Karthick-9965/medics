@@ -6,16 +6,16 @@ import { SeeAllCategory } from '../screens/SeeAllScreen';
 export type MainTabParamList = {
   HomeTab: { userName?: string; userEmail?: string } | undefined;
   MessagesTab: undefined;
-  ScheduleTab: undefined;
+  ScheduleTab: { fromProfile?: boolean } | undefined;
   NotificationsTab: undefined;
-  ProfileTab: undefined;
+  ProfileTab: { userName?: string; userEmail?: string } | undefined;
 };
 
 export type RootStackParamList = {
   Splash: undefined;
   Onboarding: undefined;
   GetStarted: undefined;
-  Login: { email?: string; password?: string } | undefined;
+  Login: { email?: string; password?: string; name?: string } | undefined;
   SignUp: undefined;
   ForgotPassword: { email?: string } | undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;

@@ -191,7 +191,7 @@ export default function PersonalInfoModal({ visible, initialData, onClose, onSav
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {

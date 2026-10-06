@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Modal, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -230,9 +231,44 @@ export default function PharmacyOrderModal({
         pharmacyName: pharmacy.name,
         orderId: genOrderId,
         estimatedDelivery: pharmacy.deliveryTime || '15-25 mins',
-        totalAmount: lastOrderType === 'catalog' ? `$${totalAmount}` : 'Pay on Delivery',
+        totalAmount: lastOrderType === 'catalog' ? `₹${totalAmount}` : 'Pay on Delivery',
         itemCount: lastOrderType === 'catalog' ? cartItemsCount : 1,
       });
+
+      // Save newly placed order to @app_pharmacy_orders so it reflects in profile orders
+      const orderItems = lastOrderType === 'catalog'
+        ? Object.entries(cart)
+            .map(([medId, qty]) => {
+              const med = MEDICINES_DATA.find((m) => m.id === medId);
+              return med ? { name: med.name, quantity: qty, price: `₹${(med.price * qty).toFixed(2)}` } : null;
+            })
+            .filter(Boolean)
+        : [{ name: 'Prescription Verification & Dispense', quantity: 1, price: 'Pay on Delivery' }];
+
+      const newOrder = {
+        id: genOrderId,
+        pharmacyName: pharmacy.name,
+        pharmacyAddress: pharmacy.address || 'Medical District, Chennai',
+        pharmacyPhone: pharmacy.phone || '+91 44 2621 8900',
+        date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'in_transit',
+        statusLabel: 'Out for Delivery',
+        items: orderItems,
+        totalAmount: lastOrderType === 'catalog' ? `₹${totalAmount}` : 'Pay on Delivery',
+        paymentMethod: paymentMethod === 'upi' ? `UPI (${upiId || 'Paid'})` : paymentMethod === 'card' ? 'Card Paid' : 'Cash on Delivery',
+        deliveryAddress: deliveryAddress || '742 Evergreen Terrace, Medical District',
+        eta: `Arriving in ${pharmacy.deliveryTime || '15-25 mins'}`,
+        trackingStep: 3,
+        deliveryAgent: {
+          name: 'Ramesh Kumar',
+          phone: '+91 98401 23456',
+          vehicle: 'Hero Electric (TN 09 AZ 4192)',
+        },
+      };
+
+      const existingOrdersStr = await AsyncStorage.getItem('@app_pharmacy_orders');
+      const existingOrders = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+      await AsyncStorage.setItem('@app_pharmacy_orders', JSON.stringify([newOrder, ...existingOrders]));
 
       if (lastOrderType === 'catalog') {
         setCart({});

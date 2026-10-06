@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "telemedicine-app",
+    "name": "Medics",
     "slug": "telemedicine-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/icon.png",
+    "icon": "./src/assets/icon-medics.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./src/assets/splash-icon.png",
+      "image": "./src/assets/splash-medics.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,8 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./src/assets/adaptive-medics.png",
+        "backgroundColor": "#138A72"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,

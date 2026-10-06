@@ -134,14 +134,14 @@ export default function AppointmentDetailModal({
             <PriceSummary
               title="Payment Summary"
               items={[
-                { label: 'Consultation Fee', amount: appointment.fee || '$47.00' },
+                { label: 'Consultation Fee', amount: appointment.fee || '₹47.00' },
                 {
                   label: 'Payment Status',
                   amount: appointment.paymentStatus || 'Paid (Online)',
                   isHighlight: true,
                 },
               ]}
-              totalAmount={appointment.fee || '$47.00'}
+              totalAmount={appointment.fee || '₹47.00'}
             />
           </ScrollView>
 

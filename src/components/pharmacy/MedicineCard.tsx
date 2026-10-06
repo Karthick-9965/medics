@@ -38,10 +38,10 @@ export default function MedicineCard({
           {medicine.dosage} • {medicine.category}
         </Text>
         <View style={styles.medPriceRow}>
-          <Text style={styles.medPrice}>${medicine.price.toFixed(2)}</Text>
+          <Text style={styles.medPrice}>₹{medicine.price.toFixed(2)}</Text>
           {medicine.originalPrice > medicine.price && (
             <Text style={styles.medOriginalPrice}>
-              ${medicine.originalPrice.toFixed(2)}
+              ₹{medicine.originalPrice.toFixed(2)}
             </Text>
           )}
         </View>

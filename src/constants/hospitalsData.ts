@@ -7,6 +7,7 @@ export interface HospitalItem {
   address?: string;
   emergencyPhone?: string;
   receptionPhone?: string;
+  email?: string;
   consultationFee?: number;
   visitingHours?: string;
   hospitalType?: string;
@@ -27,6 +28,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
     address: '21 Greams Lane, Medical District',
     emergencyPhone: '1066 / +1 (555) 901-0000',
     receptionPhone: '+1 (555) 012-4000',
+    email: 'apollo.reception@apollohospital.com',
     consultationFee: 30,
     visitingHours: '24/7 Open • OPD: 8:00 AM - 9:00 PM',
     hospitalType: 'Super Specialty & Multi-Organ Center',
@@ -45,6 +47,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
     address: '500 Memorial Boulevard, North Sector',
     emergencyPhone: '105010 / +1 (555) 902-1111',
     receptionPhone: '+1 (555) 013-5000',
+    email: 'reception@gracememorial.org',
     consultationFee: 25,
     visitingHours: '24/7 Open • OPD: 8:30 AM - 8:30 PM',
     hospitalType: 'Multi-Specialty & Trauma Care Center',
@@ -63,6 +66,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
     address: '88 City Center Cross, Downtown',
     emergencyPhone: '108 / +1 (555) 903-2222',
     receptionPhone: '+1 (555) 014-6000',
+    email: 'desk@citycaremedical.com',
     consultationFee: 20,
     visitingHours: '24/7 Open • OPD: 9:00 AM - 8:00 PM',
     hospitalType: 'General Healthcare & Daycare Center',
@@ -81,6 +85,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
     address: '102 Metro Ring Road, South Zone',
     emergencyPhone: '105711 / +1 (555) 904-3333',
     receptionPhone: '+1 (555) 015-7000',
+    email: 'support@metrohealthhospital.org',
     consultationFee: 35,
     visitingHours: '24/7 Open • OPD: 8:00 AM - 9:30 PM',
     hospitalType: 'Tertiary Care & Organ Transplant Hospital',
@@ -99,6 +104,7 @@ export const HOSPITALS_DATA: HospitalItem[] = [
     address: '14 Sunrise Avenue, East Bay',
     emergencyPhone: '108 / +1 (555) 905-4444',
     receptionPhone: '+1 (555) 016-8000',
+    email: 'reception@sunrisecommunity.org',
     consultationFee: 15,
     visitingHours: '24/7 Open • OPD: 9:00 AM - 7:00 PM',
     hospitalType: 'Community & Maternity Hospital',

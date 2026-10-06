@@ -22,6 +22,7 @@ import { DOCTORS_DATA, DoctorItem } from '../constants/doctorsData';
 import { ARTICLES_DATA, ArticleItem } from '../constants/articlesData';
 import { PHARMACIES_DATA, PharmacyItem } from '../constants/pharmaciesData';
 import { HOSPITALS_DATA, HospitalItem } from '../constants/hospitalsData';
+import { matchesDoctorSearch, matchesHospitalSearch } from '../utils/searchUtils';
 
 
 interface HomeProps {
@@ -62,7 +63,7 @@ export default function Home({
   const [directionsHospital, setDirectionsHospital] = useState<HospitalItem | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
 
-  const userName = (propName && propName !== 'User') ? propName : (storedName || 'User');
+  const userName = (propName !== undefined && propName !== '') ? propName : (storedName || 'User');
 
   useEffect(() => {
     const init = async () => {
@@ -116,14 +117,9 @@ export default function Home({
   const q = searchQuery.toLowerCase().trim();
 
   // Multi-category filtering across all 4 categories
-  const filteredDoctors = DOCTORS_DATA.filter((d) => {
-    return (
-      d.name.toLowerCase().includes(q) ||
-      d.specialization.toLowerCase().includes(q) ||
-      (d.hospital && d.hospital.toLowerCase().includes(q)) ||
-      (d.about && d.about.toLowerCase().includes(q))
-    );
-  }).sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+  const filteredDoctors = DOCTORS_DATA.filter((d) =>
+    matchesDoctorSearch(d, searchQuery)
+  ).sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
 
   const filteredPharmacies = PHARMACIES_DATA.filter((p) => {
     const matchesDrugKeyword =
@@ -156,20 +152,9 @@ export default function Home({
     );
   });
 
-  const filteredHospitals = HOSPITALS_DATA.filter((h) => {
-    const matchesHospitalKeyword =
-      q.includes('hospital') ||
-      q.includes('clinic') ||
-      q.includes('emergency') ||
-      q.includes('icu') ||
-      q.includes('bed');
-    return (
-      matchesHospitalKeyword ||
-      h.name.toLowerCase().includes(q) ||
-      (h.address && h.address.toLowerCase().includes(q)) ||
-      (h.departments && h.departments.some((dep) => dep.toLowerCase().includes(q)))
-    );
-  });
+  const filteredHospitals = HOSPITALS_DATA.filter((h) =>
+    matchesHospitalSearch(h, searchQuery)
+  );
 
   const totalResults =
     filteredDoctors.length +
@@ -265,6 +250,7 @@ export default function Home({
                   image={doctor.image}
                   rating={doctor.rating}
                   distance={doctor.distance}
+                  hospital={doctor.hospital}
                   onPress={() => setBookingDoctor(doctor)}
                 />
               ))}

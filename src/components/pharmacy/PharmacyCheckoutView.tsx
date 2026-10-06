@@ -110,11 +110,11 @@ export default function PharmacyCheckoutView({
       {lastOrderType === 'catalog' ? (
         <PriceSummary
           items={[
-            { label: `Medicines Subtotal (${cartItemsCount} items)`, amount: `$${subtotal.toFixed(2)}` },
-            { label: 'Express Delivery Fee', amount: deliveryFee === 0 ? 'FREE' : `$${deliveryFee.toFixed(2)}`, isDiscount: deliveryFee === 0 },
-            { label: 'Packaging & Platform Fee', amount: `$${platformFee.toFixed(2)}` },
+            { label: `Medicines Subtotal (${cartItemsCount} items)`, amount: `₹${subtotal.toFixed(2)}` },
+            { label: 'Express Delivery Fee', amount: deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`, isDiscount: deliveryFee === 0 },
+            { label: 'Packaging & Platform Fee', amount: `₹${platformFee.toFixed(2)}` },
           ]}
-          totalAmount={`$${totalAmount}`}
+          totalAmount={`₹${totalAmount}`}
         />
       ) : (
         <PriceSummary
@@ -140,7 +140,7 @@ export default function PharmacyCheckoutView({
           <Text style={styles.primaryBtnText}>
             {lastOrderType === 'prescription'
               ? 'Confirm Prescription Order'
-              : `Confirm Order ($${totalAmount})`}
+              : `Confirm Order (₹${totalAmount})`}
           </Text>
         )}
       </TouchableOpacity>

@@ -140,7 +140,7 @@ export default function NotificationDetailModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backgroundColor: Colors.slateOverlay65,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,

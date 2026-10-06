@@ -1,8 +1,7 @@
 import React from 'react';
 import { AppointmentItem } from './AppointmentCard';
 import AppointmentDetailModal from './AppointmentDetailModal';
-import RebookModal from './RebookModal';
-import RescheduleModal from './RescheduleModal';
+import AppointmentTimeModal from './AppointmentTimeModal';
 import CancelAppointmentModal from './CancelAppointmentModal';
 import LeaveReviewModal from './LeaveReviewModal';
 import VideoCallModal from '../../consultation/VideoCallModal';
@@ -113,19 +112,13 @@ export default function ScheduleModalsContainer({
 }: ScheduleModalsContainerProps) {
   return (
     <>
-      {/* Re-Book Modal */}
-      <RebookModal
-        visible={!!rebookTarget}
-        appointment={rebookTarget}
-        onClose={onCloseRebook}
+      {/* Unified Appointment Slot / Time Modal (Rebook & Reschedule) */}
+      <AppointmentTimeModal
+        visible={!!(rebookTarget || rescheduleTarget)}
+        mode={rebookTarget ? 'rebook' : 'reschedule'}
+        appointment={rebookTarget || rescheduleTarget}
+        onClose={rebookTarget ? onCloseRebook : onCloseReschedule}
         onRebooked={onConfirmRebook}
-      />
-
-      {/* Reschedule Modal */}
-      <RescheduleModal
-        visible={!!rescheduleTarget}
-        appointment={rescheduleTarget}
-        onClose={onCloseReschedule}
         onRescheduled={onConfirmReschedule}
       />
 

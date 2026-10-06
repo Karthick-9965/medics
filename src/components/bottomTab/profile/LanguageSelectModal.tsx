@@ -182,7 +182,7 @@ export default function LanguageSelectModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: Colors.blackOverlay55,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: Colors.bgLight,
     borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
     gap: 12,
   },
   langCardSelected: {

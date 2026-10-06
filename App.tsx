@@ -51,12 +51,12 @@ function HomeScreenWrapper({ navigation, route }: any) {
   }, [route?.params]);
 
   const parentParams = route?.params || {};
-  const userName = (parentParams?.userName && parentParams.userName !== 'User')
+  const userName = (parentParams?.userName !== undefined && parentParams?.userName !== '')
     ? parentParams.userName
-    : (sessionUser?.name || '');
-  const userEmail = (parentParams?.userEmail && !parentParams.userEmail.includes('@example.com'))
+    : (sessionUser?.name || 'User');
+  const userEmail = (parentParams?.userEmail !== undefined && parentParams?.userEmail !== '')
     ? parentParams.userEmail
-    : (sessionUser?.email || '');
+    : (sessionUser?.email || 'user@telemed.com');
 
   const handleLogout = async () => {
     await clearLoginSession();
@@ -108,12 +108,12 @@ function ProfileScreenWrapper({ navigation, route }: any) {
   }, [route?.params]);
 
   const parentParams = route?.params || {};
-  const userName = (parentParams?.userName && parentParams.userName !== 'User')
+  const userName = (parentParams?.userName !== undefined && parentParams?.userName !== '')
     ? parentParams.userName
-    : (sessionUser?.name || '');
-  const userEmail = (parentParams?.userEmail && !parentParams.userEmail.includes('@example.com'))
+    : (sessionUser?.name || 'User');
+  const userEmail = (parentParams?.userEmail !== undefined && parentParams?.userEmail !== '')
     ? parentParams.userEmail
-    : (sessionUser?.email || '');
+    : (sessionUser?.email || 'user@telemed.com');
 
   const handleLogout = async () => {
     await clearLoginSession();
@@ -125,10 +125,15 @@ function ProfileScreenWrapper({ navigation, route }: any) {
 
   return (
     <Profile
-      userName={userName || 'User'}
-      userEmail={userEmail || 'user@example.com'}
+      userName={userName}
+      userEmail={userEmail}
       onLogout={handleLogout}
-      onNavigateToSchedule={() => navigation.navigate('Main', { screen: 'ScheduleTab' })}
+      onNavigateToSchedule={() =>
+        navigation.navigate('Main', {
+          screen: 'ScheduleTab',
+          params: { fromProfile: true },
+        })
+      }
     />
   );
 }
@@ -144,13 +149,17 @@ function MessagesScreenWrapper({ navigation }: any) {
   );
 }
 
-function ScheduleScreenWrapper({ navigation }: any) {
+function ScheduleScreenWrapper({ navigation, route }: any) {
   return (
     <Schedule
       navigation={navigation}
+      route={route}
       onNavigateToMessages={() => navigation.navigate('Main', { screen: 'MessagesTab' })}
       onNavigateToAmbulance={() => navigation.navigate('Ambulance')}
       onNavigateToPharmacy={() => navigation.navigate('SeeAll', { category: 'pharmacy' })}
+      onNavigateBackToProfile={() =>
+        navigation.navigate('Main', { screen: 'ProfileTab' })
+      }
     />
   );
 }
@@ -202,6 +211,7 @@ function LoginScreen({ navigation, route }: LoginScreenProps) {
     <Login
       initialEmail={route.params?.email || ''}
       initialPassword={route.params?.password || ''}
+      initialName={route.params?.name || ''}
       onBack={() => navigation.goBack()}
       onLoginSuccess={(name, email) => {
         navigation.reset({
@@ -219,7 +229,9 @@ function SignUpScreen({ navigation }: SignUpScreenProps) {
   return (
     <SignUp
       onBack={() => navigation.goBack()}
-      onSignUpSuccess={() => navigation.navigate('Login')}
+      onSignUpSuccess={(name, email) => {
+        navigation.navigate('Login', { email, name });
+      }}
       onLoginLink={() => navigation.navigate('Login')}
     />
   );

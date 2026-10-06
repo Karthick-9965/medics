@@ -107,6 +107,8 @@ export function useAppNotification(options?: UseAppNotificationOptions): AppNoti
 
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   useEffect(() => {
     try {
@@ -147,8 +149,8 @@ export function useAppNotification(options?: UseAppNotificationOptions): AppNoti
               response.notification?.date ? new Date(response.notification.date).getTime() : Date.now(),
               response.notification?.request?.identifier ? `push_${response.notification.request.identifier}` : undefined
             ).then((notif) => {
-              if (notif && options?.onNotificationOpen) {
-                options.onNotificationOpen(notif);
+              if (notif && optionsRef.current?.onNotificationOpen) {
+                optionsRef.current.onNotificationOpen(notif);
               }
             });
           }
@@ -168,8 +170,8 @@ export function useAppNotification(options?: UseAppNotificationOptions): AppNoti
                 response.notification?.date ? new Date(response.notification.date).getTime() : Date.now(),
                 response.notification?.request?.identifier ? `push_${response.notification.request.identifier}` : undefined
               ).then((notif) => {
-                if (notif && options?.onNotificationOpen) {
-                  options.onNotificationOpen(notif);
+                if (notif && optionsRef.current?.onNotificationOpen) {
+                  optionsRef.current.onNotificationOpen(notif);
                 }
               });
             }
@@ -189,7 +191,7 @@ export function useAppNotification(options?: UseAppNotificationOptions): AppNoti
         // Safe ignore
       }
     };
-  }, [options]);
+  }, []);
 
   return {
     expoPushToken,

@@ -137,7 +137,7 @@ export default function Notifications({
         </View>
 
         <View style={styles.headerActions}>
-          {notifications.length > 0 && (
+          {eligibleNotifications.length > 0 && (
             <TouchableOpacity
               style={styles.iconActionBtn}
               onPress={handleClearAll}

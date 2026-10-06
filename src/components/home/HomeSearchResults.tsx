@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import SectionHeader from './SectionHeader';
+import EmptyState from '../common/EmptyState';
 import DoctorCard from './DoctorCard';
 import ArticleCard from './ArticleCard';
 import FacilityCard from './FacilityCard';
@@ -109,22 +110,13 @@ export default function HomeSearchResults({
 
       {/* Empty State */}
       {totalResults === 0 ? (
-        <View style={styles.emptySearchContainer}>
-          <View style={styles.emptyIconCircle}>
-            <Ionicons name="search-outline" size={32} color={Colors.primary} />
-          </View>
-          <Text style={styles.emptySearchTitle}>No results found</Text>
-          <Text style={styles.emptySearchSub}>
-            We couldn't find any doctor, drug/pharmacy, article, or hospital matching "{trimmed}".
-          </Text>
-          <TouchableOpacity
-            style={styles.clearSearchBtn}
-            onPress={onClearSearch}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.clearSearchBtnText}>Clear Search</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="search-outline"
+          title="No results found"
+          subtitle={`We couldn't find any doctor, drug/pharmacy, article, or hospital matching "${trimmed}".`}
+          actionLabel="Clear Search"
+          onAction={onClearSearch}
+        />
       ) : null}
 
       {/* 1. Doctors Results */}
@@ -148,6 +140,7 @@ export default function HomeSearchResults({
                 image={doctor.image}
                 rating={doctor.rating}
                 distance={doctor.distance}
+                hospital={doctor.hospital}
                 onPress={() => onSelectDoctor(doctor)}
               />
             ))}
@@ -292,7 +285,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: Colors.cardBgSecondary,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
   },
   tabChipActive: {
     backgroundColor: Colors.primary,
@@ -305,45 +298,6 @@ const styles = StyleSheet.create({
   },
   tabChipTextActive: {
     color: Colors.white,
-    fontWeight: '700',
-  },
-  emptySearchContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 40,
-  },
-  emptyIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptySearchTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.black,
-    marginBottom: 8,
-  },
-  emptySearchSub: {
-    fontSize: 13.5,
-    color: Colors.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  clearSearchBtn: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 22,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  clearSearchBtnText: {
-    color: Colors.white,
-    fontSize: 13,
     fontWeight: '700',
   },
 });

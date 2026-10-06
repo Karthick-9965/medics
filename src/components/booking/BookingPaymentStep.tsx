@@ -65,11 +65,11 @@ export default function BookingPaymentStep({
 
       <PriceSummary
         items={[
-          { label: `${consultationType} Consultation`, amount: `$${baseFee.toFixed(2)}` },
-          { label: 'Platform & Care Fee', amount: `$${platformFee.toFixed(2)}` },
-          { label: 'First Consultation Offer', amount: `-$${promoDiscount.toFixed(2)}`, isDiscount: true },
+          { label: `${consultationType} Consultation`, amount: `₹${baseFee.toFixed(2)}` },
+          { label: 'Platform & Care Fee', amount: `₹${platformFee.toFixed(2)}` },
+          { label: 'First Consultation Offer', amount: `-₹${promoDiscount.toFixed(2)}`, isDiscount: true },
         ]}
-        totalAmount={`$${totalAmount}`}
+        totalAmount={`₹${totalAmount}`}
       />
 
       <TouchableOpacity

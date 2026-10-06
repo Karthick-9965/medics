@@ -86,7 +86,7 @@ export default function BookDoctorModal({
     if (visible) {
       setStep(1);
       getLoginSession().then((session) => {
-        if (session?.name && session.name !== 'User' && session.name !== 'Sathish Kumar') {
+        if (session?.name) {
           setPatientName(session.name);
         } else {
           setPatientName('');
@@ -145,7 +145,7 @@ export default function BookDoctorModal({
       patientGender,
       paymentMethod,
       paymentStatus: 'Paid',
-      fee: `$${totalAmount}`,
+      fee: `₹${totalAmount}`,
       problemDescription,
     };
 
@@ -352,7 +352,7 @@ export default function BookDoctorModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {

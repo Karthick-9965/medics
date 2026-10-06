@@ -89,7 +89,7 @@ export default function ChatMessageBubble({
                   <Ionicons
                     name="shield-checkmark"
                     size={11}
-                    color={isUser ? 'rgba(255,255,255,0.85)' : Colors.successGreen}
+                    color={isUser ? Colors.whiteOverlay85 : Colors.successGreen}
                   />
                   <Text style={[styles.pdfMetaText, isUser ? styles.pdfMetaTextUser : styles.pdfMetaTextDoc]}>
                     Verified Document
@@ -99,7 +99,7 @@ export default function ChatMessageBubble({
               <Ionicons
                 name="expand-outline"
                 size={16}
-                color={isUser ? 'rgba(255,255,255,0.85)' : Colors.secondary}
+                color={isUser ? Colors.whiteOverlay85 : Colors.secondary}
                 style={{ marginLeft: 4 }}
               />
             </TouchableOpacity>
@@ -139,7 +139,7 @@ export default function ChatMessageBubble({
               style={styles.deleteBubbleBtn}
               activeOpacity={0.6}
             >
-              <Ionicons name="trash-outline" size={12} color="rgba(255, 255, 255, 0.75)" />
+              <Ionicons name="trash-outline" size={12} color={Colors.whiteOverlay75} />
             </TouchableOpacity>
           )}
         </View>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   timeTextUser: {
-    color: 'rgba(255,255,255,0.7)',
+    color: Colors.whiteOverlay70,
   },
   timeTextDoc: {
     color: Colors.secondary,
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: Colors.whiteOverlay95,
     paddingHorizontal: 8,
     paddingVertical: 5,
   },
@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
     minWidth: 190,
   },
   pdfCardUser: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: Colors.whiteOverlay18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: Colors.whiteOverlay25,
   },
   pdfCardDoc: {
     backgroundColor: Colors.cardBgSecondary,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   pdfMetaTextUser: {
-    color: 'rgba(255,255,255,0.85)',
+    color: Colors.whiteOverlay85,
   },
   pdfMetaTextDoc: {
     color: Colors.secondary,

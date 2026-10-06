@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: Colors.cardBgSecondary,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: Colors.transparent,
   },
   chipActive: {
     backgroundColor: Colors.primary,
