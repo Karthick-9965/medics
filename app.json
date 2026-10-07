@@ -37,7 +37,8 @@
           "photosPermission": "Allow Medics to access your photos to set your profile picture and upload prescriptions.",
           "cameraPermission": "Allow Medics to access your camera to take profile photos and prescription pictures."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "web": {
       "favicon": "./src/assets/favicon.png"
