@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, Linking } from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, Linking, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AppStatusBar from '../common/AppStatusBar';
 import { HospitalItem } from '../../constants/hospitalsData';
 import { getDynamicBookingDates } from '../../constants/appData';
 import ModalHeader from '../common/ModalHeader';
@@ -43,13 +44,13 @@ export default function HospitalDirectionsModal({
   onAmbulancePress,
   onBookingConfirmed,
 }: HospitalDirectionsModalProps) {
-  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'info' | 'book'>('info');
   const [viewState, setViewState] = useState<'main' | 'success'>('main');
 
   // Booking Form State
   const [selectedVisitType, setSelectedVisitType] = useState('opd');
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedDoctorName, setSelectedDoctorName] = useState('');
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('10:00 AM');
   const [patientName, setPatientName] = useState('');
@@ -116,8 +117,28 @@ export default function HospitalDirectionsModal({
     }
   };
 
+  const handleSelectVisitType = (typeId: string) => {
+    setSelectedVisitType(typeId);
+    if (typeId === 'emergency') {
+      // Auto-select Emergency department, set date to today, time to immediate
+      setSelectedDepartment('Emergency');
+      setSelectedDateIndex(0);
+      setSelectedTimeSlot('Immediate / Right Now');
+    } else {
+      if (selectedDepartment.toLowerCase() === 'emergency' && hospital.departments && hospital.departments.length > 0) {
+        setSelectedDepartment(hospital.departments[0]);
+      }
+      if (selectedTimeSlot === 'Immediate / Right Now') {
+        setSelectedTimeSlot('10:00 AM');
+      }
+    }
+  };
+
   const handleBookHospitalVisit = async () => {
-    if (!patientName.trim()) {
+    const isEmergency = selectedVisitType === 'emergency';
+
+    // Name is only strictly required for non-emergency bookings
+    if (!isEmergency && !patientName.trim()) {
       setAlertConfig({
         visible: true,
         type: 'warning',
@@ -129,20 +150,25 @@ export default function HospitalDirectionsModal({
     }
 
     setIsProcessing(true);
-    const genToken = `#HOSP-${Math.floor(10000 + Math.random() * 90000)}`;
+    const genToken = isEmergency
+      ? `#EMG-${Math.floor(10000 + Math.random() * 90000)}`
+      : `#HOSP-${Math.floor(10000 + Math.random() * 90000)}`;
     setBookingToken(genToken);
 
     const visitTypeObj = VISIT_TYPES.find((v) => v.id === selectedVisitType);
     const visitTypeLabel = visitTypeObj ? visitTypeObj.label : 'OPD Consultation';
-    const chosenDateStr = bookingDates[selectedDateIndex]?.fullDate || 'Today';
+    const chosenDate = isEmergency ? 'Today' : (bookingDates[selectedDateIndex]?.fullDate || 'Today');
+    const chosenTime = isEmergency ? 'Immediate / Right Now' : selectedTimeSlot;
+    const chosenDept = isEmergency ? 'Emergency' : (selectedDepartment || 'General Medicine');
+    const finalPatientName = patientName.trim() || (isEmergency ? 'Emergency Patient' : 'Patient');
 
     try {
       await sendHospitalBookingNotificationAndReminder({
         hospitalName: hospital.name,
         bookingToken: genToken,
-        department: selectedDepartment || 'General Medicine',
-        date: chosenDateStr,
-        time: selectedTimeSlot,
+        department: chosenDept,
+        date: chosenDate,
+        time: chosenTime,
         visitType: visitTypeLabel,
         receptionPhone: hospital.receptionPhone,
       });
@@ -152,8 +178,12 @@ export default function HospitalDirectionsModal({
       onBookingConfirmed?.({
         hospital: hospital.name,
         token: genToken,
-        date: chosenDateStr,
-        time: selectedTimeSlot,
+        date: chosenDate,
+        time: chosenTime,
+        department: chosenDept,
+        doctorName: isEmergency ? 'Emergency Duty Officer' : (selectedDoctorName || 'Duty Specialist'),
+        patientName: finalPatientName,
+        isEmergency,
       });
     } catch (e) {
       console.log(e);
@@ -175,23 +205,25 @@ export default function HospitalDirectionsModal({
     <Modal
       visible={visible}
       animationType="slide"
-      transparent
-      statusBarTranslucent
-      navigationBarTranslucent
+      presentationStyle="fullScreen"
       onRequestClose={handleResetAndClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-          <ModalHeader
-            title={viewState === 'success' ? 'Booking Confirmed' : hospital.name}
-            subtitle={
-              viewState === 'main'
-                ? `${hospital.distance} • ${hospital.hospitalType || 'Certified Medical Hospital'}`
-                : undefined
-            }
-            onBack={viewState === 'success' ? handleResetAndClose : undefined}
-            onClose={handleResetAndClose}
-          />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <AppStatusBar style="dark" forceApply />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoid}
+        >
+          <View style={styles.contentWrapper}>
+            <ModalHeader
+              title={viewState === 'success' ? (selectedVisitType === 'emergency' ? 'Emergency Confirmed' : 'Booking Confirmed') : hospital.name}
+              subtitle={
+                viewState === 'main'
+                  ? `${hospital.distance} • ${hospital.hospitalType || 'Certified Medical Hospital'}`
+                  : undefined
+              }
+              onClose={handleResetAndClose}
+            />
 
           {viewState === 'main' && (
             <View style={{ flex: 1 }}>
@@ -248,6 +280,7 @@ export default function HospitalDirectionsModal({
                   visitTypes={VISIT_TYPES}
                   selectedVisitType={selectedVisitType}
                   selectedDepartment={selectedDepartment}
+                  selectedDoctorName={selectedDoctorName}
                   selectedDateIndex={selectedDateIndex}
                   selectedTimeSlot={selectedTimeSlot}
                   patientName={patientName}
@@ -255,8 +288,9 @@ export default function HospitalDirectionsModal({
                   visitNotes={visitNotes}
                   currentFee={currentFee}
                   isProcessing={isProcessing}
-                  onSelectVisitType={setSelectedVisitType}
+                  onSelectVisitType={handleSelectVisitType}
                   onSelectDepartment={setSelectedDepartment}
+                  onSelectDoctorName={setSelectedDoctorName}
                   onSelectDateIndex={setSelectedDateIndex}
                   onSelectTimeSlot={setSelectedTimeSlot}
                   onPatientNameChange={setPatientName}
@@ -272,16 +306,19 @@ export default function HospitalDirectionsModal({
             <HospitalBookingSuccess
               hospital={hospital}
               bookingToken={bookingToken}
-              selectedDepartment={selectedDepartment}
-              chosenDateStr={chosenDateStr}
-              selectedTimeSlot={selectedTimeSlot}
-              patientName={patientName}
+              selectedDepartment={selectedVisitType === 'emergency' ? 'Emergency' : selectedDepartment}
+              selectedDoctorName={selectedVisitType === 'emergency' ? 'Emergency Duty Officer' : selectedDoctorName}
+              chosenDateStr={selectedVisitType === 'emergency' ? 'Today' : chosenDateStr}
+              selectedTimeSlot={selectedVisitType === 'emergency' ? 'Immediate / Right Now' : selectedTimeSlot}
+              patientName={patientName.trim() || (selectedVisitType === 'emergency' ? 'Emergency Patient' : 'Patient')}
+              isEmergency={selectedVisitType === 'emergency'}
               onCallReception={handleCallReception}
               onDone={handleResetAndClose}
             />
           )}
-        </View>
-      </View>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
 
       {/* Project Themed Medical Alert Modal */}
       <MedicalAlertModal
@@ -298,16 +335,16 @@ export default function HospitalDirectionsModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  safeArea: {
     flex: 1,
-    backgroundColor: Colors.modalOverlay,
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: '92%',
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: Colors.white,
   },
   tabBar: {
     flexDirection: 'row',
@@ -339,18 +376,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabBadge: {
-    backgroundColor: Colors.borderLight,
+    backgroundColor: Colors.accentLight,
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   tabBadgeActive: {
-    backgroundColor: Colors.whiteOverlay25,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   tabBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.primary,
   },
   tabBadgeTextActive: {
     color: Colors.white,

@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AppStatusBar from '../common/AppStatusBar';
 import { DoctorItem } from '../../constants/doctorsData';
 import {
   getDynamicBookingDates,
@@ -53,7 +56,6 @@ export default function BookDoctorModal({
   onBookingConfirmed,
   onNavigateToSchedule,
 }: BookDoctorModalProps) {
-  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedDateIndex, setSelectedDateIndex] = useState(0);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('10:30 AM');
@@ -185,21 +187,24 @@ export default function BookDoctorModal({
     <Modal
       visible={visible}
       animationType="slide"
-      transparent
-      statusBarTranslucent
-      navigationBarTranslucent
+      presentationStyle="fullScreen"
       onRequestClose={handleResetAndClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-          <ModalHeader
-            title={step === 4 ? 'Booking Confirmed' : `Book ${doctor.name}`}
-            subtitle={step < 4 ? `Step ${step} of 3` : undefined}
-            onBack={handleHeaderBack}
-            onClose={handleResetAndClose}
-          />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <AppStatusBar style="dark" forceApply />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardAvoid}
+        >
+          <View style={styles.contentWrapper}>
+            <ModalHeader
+              title={step === 4 ? 'Booking Confirmed' : `Book ${doctor.name}`}
+              subtitle={step < 4 ? `Step ${step} of 3` : undefined}
+              onBack={step > 1 && step < 4 ? handleHeaderBack : undefined}
+              onClose={handleResetAndClose}
+            />
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             {/* Doctor mini summary card */}
             {step < 4 && <DoctorBookingHeaderCard doctor={doctor} />}
 
@@ -334,9 +339,10 @@ export default function BookDoctorModal({
             )}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
 
-      <MedicalAlertModal
+    <MedicalAlertModal
         visible={alertConfig.visible}
         type={alertConfig.type}
         icon={alertConfig.icon}
@@ -350,16 +356,16 @@ export default function BookDoctorModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  safeArea: {
     flex: 1,
-    backgroundColor: Colors.modalOverlay,
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '92%',
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: Colors.white,
   },
   scrollContent: {
     paddingHorizontal: 20,

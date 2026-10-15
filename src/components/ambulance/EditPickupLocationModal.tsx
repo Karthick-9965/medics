@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import ModalHeader from '../common/ModalHeader';
 
@@ -27,7 +27,10 @@ export default function EditPickupLocationModal({
 }: EditPickupLocationModalProps) {
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
         <View style={styles.modalCard}>
           <ModalHeader title="Edit Pickup Address" onClose={onClose} />
           <View style={styles.content}>
@@ -56,7 +59,7 @@ export default function EditPickupLocationModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

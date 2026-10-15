@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import ProfileUserCard from '../components/bottomTab/profile/ProfileUserCard';
 import HealthStatsRow from '../components/bottomTab/profile/HealthStatsRow';
 import ProfileMenuItem from '../components/bottomTab/profile/ProfileMenuItem';
@@ -33,9 +34,16 @@ const INITIAL_PROFILE: UserProfileData = {
   weight: '75 kg',
   heartRate: '215bpm',
   calories: '756cal',
-  emergencyContactName: 'Priya Kumar (Spouse)',
+  emergencyContactName: 'Priya Kumar',
   emergencyContactPhone: '+1 (555) 019-5678',
-  address: '742 Evergreen Terrace, Medical District',
+  address: 'Flat 402, Green Towers, 742 Evergreen Terrace, Chennai, 600028',
+  apartment: 'Flat 402, Green Towers',
+  streetAddress: '742 Evergreen Terrace, Medical District',
+  landmark: 'Near City Central Park',
+  city: 'Chennai',
+  state: 'Tamil Nadu',
+  pincode: '600028',
+  addressType: 'Home',
   allergies: 'Penicillin, Peanuts',
 };
 
@@ -68,6 +76,7 @@ export default function Profile({
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showHelpCenterModal, setShowHelpCenterModal] = useState(false);
   const [showPaymentMethodsModal, setShowPaymentMethodsModal] = useState(false);
+  const [showFamilyMembersModal, setShowFamilyMembersModal] = useState(false);
   const [defaultCardText, setDefaultCardText] = useState('Visa ending in 4242');
   const [appLanguage, setAppLanguage] = useState<SupportedLanguage>('en');
 
@@ -176,6 +185,7 @@ export default function Profile({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <AppStatusBar style="dark" />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
@@ -218,6 +228,14 @@ export default function Profile({
               title="Personal Information"
               subtitle="Edit health details & contacts"
               onPress={() => setShowPersonalInfoModal(true)}
+            />
+            <View style={styles.itemDivider} />
+            <ProfileMenuItem
+              icon="people-outline"
+              title="Family Members & Patients"
+              subtitle="Add & manage persons for booking"
+              badge="Family"
+              onPress={() => setShowFamilyMembersModal(true)}
             />
             <View style={styles.itemDivider} />
             <ProfileMenuItem
@@ -308,6 +326,8 @@ export default function Profile({
         showPaymentMethodsModal={showPaymentMethodsModal}
         onClosePaymentMethodsModal={() => setShowPaymentMethodsModal(false)}
         onCardUpdated={(cardText) => setDefaultCardText(cardText)}
+        showFamilyMembersModal={showFamilyMembersModal}
+        onCloseFamilyMembersModal={() => setShowFamilyMembersModal(false)}
         showLanguageModal={showLanguageModal}
         currentLanguage={appLanguage}
         onCloseLanguageModal={() => setShowLanguageModal(false)}

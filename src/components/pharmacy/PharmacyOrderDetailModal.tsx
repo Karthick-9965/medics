@@ -96,6 +96,8 @@ export default function PharmacyOrderDetailModal({
             items={order.items}
             totalAmount={order.totalAmount}
             paymentMethod={order.paymentMethod}
+            subtotal={order.subtotal}
+            deliveryFee={order.deliveryFee}
           />
 
           {/* Modal Action Buttons */}

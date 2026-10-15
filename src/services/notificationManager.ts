@@ -124,45 +124,6 @@ export async function sendAppointmentNotificationAndReminder(params: {
       createdAt: Date.now(),
       actionTarget: 'schedule',
     });
-
-    // 3. Reminder Notification & In-App Reminder
-    if (params.setReminder !== false) {
-      const reminderTitle = `Appointment Reminder: ${params.doctorName}`;
-      const reminderBody = `Reminder: Your ${params.consultationType || 'Consultation'} with ${params.doctorName} is scheduled on ${params.date} at ${params.time}. Please be ready with your health records.`;
-
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: reminderTitle,
-            body: reminderBody,
-            data: { type: 'doctor_reminder', bookingId: params.bookingId },
-            sound: 'default',
-          },
-          trigger: {
-            seconds: 4,
-          } as any,
-        });
-      } catch (e) {
-        // Safe fallback
-      }
-
-      // Save scheduled reminder into notification center
-      setTimeout(async () => {
-        try {
-          await saveNotification({
-            type: 'appointment',
-            title: reminderTitle,
-            message: reminderBody,
-            time: 'Just now',
-            timestamp: 'Just now',
-            createdAt: Date.now(),
-            actionTarget: 'schedule',
-          });
-        } catch (e) {
-          console.warn('Error saving appointment reminder to storage', e);
-        }
-      }, 4000);
-    }
   } catch (error) {
     console.warn('Error triggering appointment notification:', error);
   }
@@ -209,44 +170,6 @@ export async function sendAppointmentRescheduledNotificationAndReminder(params: 
       createdAt: Date.now(),
       actionTarget: 'schedule',
     });
-
-    // 3. Reminder Notification & In-App Reminder
-    if (params.setReminder !== false) {
-      const reminderTitle = `Appointment Reminder: ${params.doctorName}`;
-      const reminderBody = `Reminder: Your rescheduled consultation with ${params.doctorName} is coming up on ${params.date} at ${params.time}. Please be prepared.`;
-
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: reminderTitle,
-            body: reminderBody,
-            data: { type: 'doctor_reminder', bookingId: params.bookingId },
-            sound: 'default',
-          },
-          trigger: {
-            seconds: 4,
-          } as any,
-        });
-      } catch (e) {
-        // Safe fallback
-      }
-
-      setTimeout(async () => {
-        try {
-          await saveNotification({
-            type: 'appointment',
-            title: reminderTitle,
-            message: reminderBody,
-            time: 'Just now',
-            timestamp: 'Just now',
-            createdAt: Date.now(),
-            actionTarget: 'schedule',
-          });
-        } catch (e) {
-          console.warn('Error saving reschedule reminder to storage', e);
-        }
-      }, 4000);
-    }
   } catch (error) {
     console.warn('Error triggering reschedule notification:', error);
   }
@@ -293,44 +216,6 @@ export async function sendAppointmentRebookedNotificationAndReminder(params: {
       createdAt: Date.now(),
       actionTarget: 'schedule',
     });
-
-    // 3. Reminder Notification & In-App Reminder
-    if (params.setReminder !== false) {
-      const reminderTitle = `Appointment Reminder: ${params.doctorName}`;
-      const reminderBody = `Reminder: Your re-booked consultation with ${params.doctorName} is confirmed for ${params.date} at ${params.time}.`;
-
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: reminderTitle,
-            body: reminderBody,
-            data: { type: 'doctor_reminder', bookingId: params.bookingId },
-            sound: 'default',
-          },
-          trigger: {
-            seconds: 4,
-          } as any,
-        });
-      } catch (e) {
-        // Safe fallback
-      }
-
-      setTimeout(async () => {
-        try {
-          await saveNotification({
-            type: 'appointment',
-            title: reminderTitle,
-            message: reminderBody,
-            time: 'Just now',
-            timestamp: 'Just now',
-            createdAt: Date.now(),
-            actionTarget: 'schedule',
-          });
-        } catch (e) {
-          console.warn('Error saving rebook reminder to storage', e);
-        }
-      }, 4000);
-    }
   } catch (error) {
     console.warn('Error triggering rebook notification:', error);
   }

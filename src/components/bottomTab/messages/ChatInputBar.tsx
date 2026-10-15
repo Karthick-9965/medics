@@ -32,7 +32,7 @@ export default function ChatInputBar({
     (attachedImage || '').toLowerCase().includes('.pdf');
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={styles.container}>
       {/* Attached Prescription Preview Banner */}
       {attachedImage && (
         <View style={styles.attachedPreviewBar}>
@@ -101,11 +101,14 @@ export default function ChatInputBar({
           <Ionicons name="send" size={18} color={Colors.white} />
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.white,
+  },
   attachedPreviewBar: {
     flexDirection: 'row',
     alignItems: 'center',

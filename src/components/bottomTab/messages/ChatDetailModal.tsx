@@ -5,6 +5,9 @@ import {
   Text,
   ScrollView,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +24,7 @@ import ChatDoctorHeader from './ChatDoctorHeader';
 import ChatPendingAttachmentCard, { PendingSendItem } from './ChatPendingAttachmentCard';
 import ChatFullscreenImageModal from './ChatFullscreenImageModal';
 import ChatDeleteConfirmModal from './ChatDeleteConfirmModal';
+import AppStatusBar from '../../common/AppStatusBar';
 
 export { ChatMessage };
 
@@ -73,6 +77,7 @@ export default function ChatDetailModal({
   const [pendingSendItem, setPendingSendItem] = useState<PendingSendItem | null>(null);
   const [pendingSendNote, setPendingSendNote] = useState('');
   const [messageToDelete, setMessageToDelete] = useState<{ index: number; message: ChatMessage } | null>(null);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     type?: MedicalAlertType;
@@ -85,6 +90,26 @@ export default function ChatDetailModal({
     message: '',
   });
   const scrollRef = useRef<ScrollView | null>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -108,6 +133,16 @@ export default function ChatDetailModal({
         .catch((err) => console.log('Pending camera in Chat error:', err));
     }
   }, [visible, messages.length]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+      }
+    );
+    return () => showSub.remove();
+  }, []);
 
   if (!visible || !conversation) return null;
 
@@ -245,9 +280,14 @@ export default function ChatDetailModal({
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={isKeyboardVisible && Platform.OS === 'android' ? ['top'] : ['top', 'bottom']}
+      >
+        <AppStatusBar style="dark" forceApply />
         {/* 1. Reusable Doctor Chat Header */}
         <ChatDoctorHeader
           conversation={conversation}
@@ -256,50 +296,57 @@ export default function ChatDetailModal({
           onVideoCall={onVideoCall}
         />
 
-        {/* 2. Quick Suggestion Prompts */}
-        <QuickPromptsRow prompts={QUICK_PROMPTS} onSelectPrompt={handlePromptPress} />
-
-        {/* 3. Message Thread Scroll View */}
-        <ScrollView
-          ref={scrollRef}
-          style={styles.messageList}
-          contentContainerStyle={styles.messageContent}
-          showsVerticalScrollIndicator={false}
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoid}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          {messages.map((m, idx) => (
-            <ChatMessageBubble
-              key={m.id || idx}
-              message={m}
-              conversation={conversation}
-              onImagePress={(uri) => setPreviewImageUri(uri)}
-              onDeletePress={() => setMessageToDelete({ index: idx, message: m })}
-            />
-          ))}
+          {/* 2. Quick Suggestion Prompts */}
+          <QuickPromptsRow prompts={QUICK_PROMPTS} onSelectPrompt={handlePromptPress} />
 
-          {isTyping && (
-            <View style={styles.typingWrap}>
-              <Text style={styles.typingText}>
-                {conversation.type === 'clinic'
-                  ? `${conversation.name} is typing...`
-                  : `Dr. ${conversation.name.replace(/^Dr\.\s*/, '')} is typing...`}
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+          {/* 3. Message Thread Scroll View */}
+          <ScrollView
+            ref={scrollRef}
+            style={styles.messageList}
+            contentContainerStyle={styles.messageContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {messages.map((m, idx) => (
+              <ChatMessageBubble
+                key={m.id || idx}
+                message={m}
+                conversation={conversation}
+                onImagePress={(uri) => setPreviewImageUri(uri)}
+                onDeletePress={() => setMessageToDelete({ index: idx, message: m })}
+              />
+            ))}
 
-        {/* 4. Bottom Input Bar */}
-        <ChatInputBar
-          inputText={inputText}
-          attachedImage={attachedImage}
-          attachedName={attachedName}
-          onInputChange={setInputText}
-          onOpenAttachment={() => setShowUploadModal(true)}
-          onRemoveAttachment={() => {
-            setAttachedImage(null);
-            setAttachedName('');
-          }}
-          onSend={handleSend}
-        />
+            {isTyping && (
+              <View style={styles.typingWrap}>
+                <Text style={styles.typingText}>
+                  {conversation.type === 'clinic'
+                    ? `${conversation.name} is typing...`
+                    : `Dr. ${conversation.name.replace(/^Dr\.\s*/, '')} is typing...`}
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* 4. Bottom Input Bar */}
+          <ChatInputBar
+            inputText={inputText}
+            attachedImage={attachedImage}
+            attachedName={attachedName}
+            onInputChange={setInputText}
+            onOpenAttachment={() => setShowUploadModal(true)}
+            onRemoveAttachment={() => {
+              setAttachedImage(null);
+              setAttachedName('');
+            }}
+            onSend={handleSend}
+          />
+        </KeyboardAvoidingView>
 
         {/* 5. Prescription Attachment Source Picker Modal */}
         <ChatAttachmentModal
@@ -367,6 +414,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   messageList: {
     flex: 1,

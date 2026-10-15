@@ -18,9 +18,13 @@ interface ModalHeaderProps {
 export default function ModalHeader({ title, subtitle, onClose, onBack, rightAction }: ModalHeaderProps) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack || onClose} style={styles.iconBtn} activeOpacity={0.7}>
-        <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
-      </TouchableOpacity>
+      {onBack ? (
+        <TouchableOpacity onPress={onBack} style={styles.iconBtn} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.placeholderBtn} />
+      )}
       <View style={styles.titleContainer}>
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -56,6 +60,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  placeholderBtn: {
+    width: 38,
+    height: 38,
   },
   titleContainer: {
     flex: 1,

@@ -153,14 +153,6 @@ export default function LanguageSelectModal({
               {/* Action Buttons */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={styles.cancelBtn}
-                  onPress={onClose}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
                   style={styles.applyBtn}
                   onPress={handleApply}
                   activeOpacity={0.7}
@@ -338,7 +330,7 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   applyBtn: {
-    flex: 1.4,
+    flex: 1,
     flexDirection: 'row',
     gap: 6,
     paddingVertical: 12,

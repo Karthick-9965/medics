@@ -8,42 +8,66 @@ export interface HospitalBookingSuccessProps {
   hospital: HospitalItem;
   bookingToken: string;
   selectedDepartment: string;
+  selectedDoctorName?: string;
   chosenDateStr: string;
   selectedTimeSlot: string;
   patientName: string;
+  isEmergency?: boolean;
   onCallReception: () => void;
   onDone: () => void;
 }
 
 /**
- * Reusable booking confirmation view after reserving a hospital visit or bed token.
+ * Reusable booking confirmation view after reserving a hospital visit or emergency token.
  */
 export default function HospitalBookingSuccess({
   hospital,
   bookingToken,
   selectedDepartment,
+  selectedDoctorName,
   chosenDateStr,
   selectedTimeSlot,
   patientName,
+  isEmergency = false,
   onCallReception,
   onDone,
 }: HospitalBookingSuccessProps) {
   return (
     <View style={styles.successContainer}>
-      <Ionicons name="checkmark-circle" size={68} color={Colors.successGreen} />
-      <Text style={styles.successTitle}>Hospital Visit Booked!</Text>
+      <Ionicons
+        name={isEmergency ? 'alert-circle' : 'checkmark-circle'}
+        size={68}
+        color={isEmergency ? Colors.primary : Colors.successGreen}
+      />
+      <Text style={[styles.successTitle, isEmergency && { color: Colors.primary }]}>
+        {isEmergency ? 'Emergency Token Booked!' : 'Hospital Visit Booked!'}
+      </Text>
       <Text style={styles.successSubtitle}>
-        Your appointment token at {hospital.name} has been generated. Please present this token at the hospital reception.
+        {isEmergency
+          ? `Your priority emergency token at ${hospital.name} has been generated. Please report directly to the Casualty / Emergency desk upon arrival.`
+          : `Your appointment token at ${hospital.name} has been generated. Please present this token at the hospital reception.`}
       </Text>
 
-      <View style={styles.tokenCard}>
-        <Text style={styles.tokenLabel}>HOSPITAL TOKEN REFERENCE</Text>
-        <Text style={styles.tokenNumber}>{bookingToken}</Text>
+      <View style={[styles.tokenCard, isEmergency && styles.emergencyTokenCard]}>
+        <Text style={[styles.tokenLabel, isEmergency && { color: Colors.primary }]}>
+          {isEmergency ? 'EMERGENCY TOKEN REFERENCE' : 'HOSPITAL TOKEN REFERENCE'}
+        </Text>
+        <Text style={[styles.tokenNumber, isEmergency && { color: Colors.primary }]}>{bookingToken}</Text>
         <View style={styles.tokenDivider} />
         <View style={styles.tokenRow}>
           <Text style={styles.tokenItemKey}>Department:</Text>
-          <Text style={styles.tokenItemVal}>{selectedDepartment || 'General'}</Text>
+          <Text style={[styles.tokenItemVal, isEmergency && { color: Colors.primary, fontWeight: '700' }]}>
+            {selectedDepartment || (isEmergency ? 'Emergency' : 'General')}
+          </Text>
         </View>
+        {!isEmergency && selectedDoctorName ? (
+          <View style={styles.tokenRow}>
+            <Text style={styles.tokenItemKey}>Consulting Doctor:</Text>
+            <Text style={[styles.tokenItemVal, { color: Colors.primary, fontWeight: '700' }]}>
+              {selectedDoctorName}
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.tokenRow}>
           <Text style={styles.tokenItemKey}>Date & Time:</Text>
           <Text style={styles.tokenItemVal}>
@@ -52,12 +76,23 @@ export default function HospitalBookingSuccess({
         </View>
         <View style={styles.tokenRow}>
           <Text style={styles.tokenItemKey}>Patient:</Text>
-          <Text style={styles.tokenItemVal}>{patientName}</Text>
+          <Text style={styles.tokenItemVal}>{patientName || 'Emergency Patient'}</Text>
         </View>
+        {isEmergency ? (
+          <View style={styles.tokenRow}>
+            <Text style={styles.tokenItemKey}>Payment / Fee:</Text>
+            <Text style={[styles.tokenItemVal, { fontWeight: '700', color: Colors.primary }]}>- (Direct at Triage)</Text>
+          </View>
+        ) : (
+          <View style={styles.tokenRow}>
+            <Text style={styles.tokenItemKey}>Token Status:</Text>
+            <Text style={[styles.tokenItemVal, { fontWeight: '700', color: Colors.successGreen }]}>Active & Verified</Text>
+          </View>
+        )}
         <View style={styles.tokenRow}>
-          <Text style={styles.tokenItemKey}>Reception Helpdesk:</Text>
+          <Text style={styles.tokenItemKey}>Helpdesk / Helpline:</Text>
           <Text style={[styles.tokenItemVal, { color: Colors.primary, fontWeight: '700' }]}>
-            {hospital.receptionPhone}
+            {isEmergency ? (hospital.emergencyPhone || hospital.receptionPhone) : hospital.receptionPhone}
           </Text>
         </View>
       </View>
@@ -65,9 +100,15 @@ export default function HospitalBookingSuccess({
       <View style={styles.successBtnRow}>
         <TouchableOpacity style={styles.callReceptionSuccessBtn} onPress={onCallReception} activeOpacity={0.8}>
           <Ionicons name="call" size={16} color={Colors.primary} />
-          <Text style={styles.callReceptionSuccessText}>Call Reception</Text>
+          <Text style={styles.callReceptionSuccessText}>
+            {isEmergency ? 'Call Emergency Desk' : 'Call Reception'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.doneBtn} onPress={onDone} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.doneBtn}
+          onPress={onDone}
+          activeOpacity={0.8}
+        >
           <Text style={styles.doneBtnText}>Done</Text>
         </TouchableOpacity>
       </View>
@@ -105,6 +146,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     width: '100%',
     marginBottom: 20,
+  },
+  emergencyTokenCard: {
+    borderColor: '#A3D9D0',
+    backgroundColor: Colors.accentLight,
   },
   tokenLabel: {
     fontSize: 11,

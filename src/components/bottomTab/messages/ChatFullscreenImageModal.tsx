@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
+import AppStatusBar from '../../common/AppStatusBar';
 
 export interface ChatFullscreenImageModalProps {
   uri: string | null;
@@ -26,6 +27,7 @@ export default function ChatFullscreenImageModal({
   return (
     <View style={styles.overlay}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <AppStatusBar style="light" forceApply restoreOnUnmount="dark" />
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={1}>

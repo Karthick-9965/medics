@@ -227,15 +227,6 @@ export default function ProfilePhotoModal({
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Cancel Button */}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={onClose}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
         </View>
       </View>
 

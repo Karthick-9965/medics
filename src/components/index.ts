@@ -25,6 +25,7 @@ export { default as ContactActionButtons } from './common/ContactActionButtons';
 export { default as EmergencyHotlines } from './common/EmergencyHotlines';
 export { default as MedicalAlertModal } from './modals/MedicalAlertModal';
 export { default as SocialLoginButtons } from './common/SocialLoginButtons';
+export { default as AppStatusBar } from './common/AppStatusBar';
 
 // Card Components
 export { default as DoctorCard } from './home/DoctorCard';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, View, Text, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
@@ -61,7 +61,10 @@ export default function LeaveReviewModal({
       navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.overlay}
+      >
         <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <ModalHeader title="Rate Consultation" subtitle={appointment.doctorName} onClose={onClose} />
           <View style={{ padding: 16 }}>
@@ -85,7 +88,7 @@ export default function LeaveReviewModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* Project Themed Medical Alert Modal */}
       <MedicalAlertModal

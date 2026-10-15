@@ -4,6 +4,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import Logo from '../components/ui/Logo';
 import Button from '../components/ui/Button';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 
 interface GetStartedProps {
   onLogin: () => void;
@@ -13,6 +14,7 @@ interface GetStartedProps {
 export default function GetStarted({ onLogin, onSignUp }: GetStartedProps) {
   return (
     <SafeAreaView style={styles.container}>
+      <AppStatusBar style="dark" />
       <View style={styles.contentContainer}>
         {/* Logo and Brand Name */}
         <View style={styles.logoSection}>

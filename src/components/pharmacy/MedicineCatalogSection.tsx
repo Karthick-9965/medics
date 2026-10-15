@@ -14,6 +14,7 @@ export interface MedicineCatalogSectionProps {
   filteredMedicines: MedicineItem[];
   cart: { [id: string]: number };
   cartItemsCount: number;
+  subtotal?: number;
   totalAmount: string;
   onAddToCart: (id: string) => void;
   onRemoveFromCart: (id: string) => void;
@@ -31,6 +32,7 @@ export default function MedicineCatalogSection({
   filteredMedicines,
   cart,
   cartItemsCount,
+  subtotal,
   totalAmount,
   onAddToCart,
   onRemoveFromCart,
@@ -118,19 +120,36 @@ export default function MedicineCatalogSection({
 
       {/* View Cart Sticky Bar */}
       {cartItemsCount > 0 && (
-        <View style={styles.cartBar}>
-          <View>
-            <Text style={styles.cartBarItems}>{cartItemsCount} items added</Text>
-            <Text style={styles.cartBarTotal}>₹{totalAmount}</Text>
+        <View style={styles.cartBarContainer}>
+          {subtotal !== undefined && (
+            <View style={subtotal >= 500 ? styles.freeBarSuccess : styles.freeBarNotice}>
+              <Ionicons
+                name={subtotal >= 500 ? 'checkmark-circle' : 'bicycle'}
+                size={14}
+                color={subtotal >= 500 ? Colors.successDark : Colors.warningDark}
+              />
+              <Text style={subtotal >= 500 ? styles.freeBarTextSuccess : styles.freeBarTextNotice}>
+                {subtotal >= 500
+                  ? '🎉 FREE Delivery Unlocked! (Order is above ₹500)'
+                  : `Add ₹${(500 - subtotal).toFixed(2)} more for FREE Delivery (Orders above ₹500)`}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.cartBar}>
+            <View>
+              <Text style={styles.cartBarItems}>{cartItemsCount} {cartItemsCount === 1 ? 'item' : 'items'} in cart</Text>
+              <Text style={styles.cartBarTotal}>₹{totalAmount}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.viewCartBtn}
+              onPress={onProceedToCheckout}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.viewCartText}>View Cart & Checkout</Text>
+              <Ionicons name="arrow-forward" size={16} color={Colors.white} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.viewCartBtn}
-            onPress={onProceedToCheckout}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewCartText}>View Cart & Checkout</Text>
-            <Ionicons name="arrow-forward" size={16} color={Colors.white} />
-          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -217,11 +236,50 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '700',
   },
-  cartBar: {
+  cartBarContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    elevation: 8,
+    shadowColor: Colors.shadowColor,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  freeBarNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.warningBgLight,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.warningDark,
+  },
+  freeBarSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.successBgTint,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.successBorder,
+  },
+  freeBarTextNotice: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: Colors.warningDark,
+  },
+  freeBarTextSuccess: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: Colors.successDark,
+  },
+  cartBar: {
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
@@ -230,11 +288,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 8,
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   cartBarItems: {
     fontSize: 12,

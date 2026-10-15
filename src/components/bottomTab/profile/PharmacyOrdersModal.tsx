@@ -36,6 +36,8 @@ export interface PharmacyOrder {
   statusLabel: string;
   items: PharmacyOrderItem[];
   totalAmount: string;
+  subtotal?: string;
+  deliveryFee?: string;
   paymentMethod: string;
   deliveryAddress: string;
   eta: string;
@@ -57,11 +59,13 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'in_transit',
     statusLabel: 'Out for Delivery',
     items: [
-      { name: 'Paracetamol 650mg (Strip of 15)', quantity: 2, price: '₹7.00' },
-      { name: 'Amoxicillin 500mg (Strip of 10)', quantity: 1, price: '₹12.50' },
-      { name: 'Vitamin C Chewable (Bottle of 30)', quantity: 1, price: '₹9.00' },
+      { name: 'Paracetamol 650mg (Strip of 10)', quantity: 2, price: '₹70.00' },
+      { name: 'Amoxicillin 500mg (Strip of 6)', quantity: 1, price: '₹85.00' },
+      { name: 'Multivitamin Complete Daily (60 Tabs)', quantity: 2, price: '₹580.00' },
     ],
-    totalAmount: '₹28.50',
+    totalAmount: '₹735.00',
+    subtotal: '₹735.00',
+    deliveryFee: 'FREE',
     paymentMethod: 'UPI Paid (Transaction #991024)',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Arriving in 15-20 mins',
@@ -81,10 +85,12 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'delivered',
     statusLabel: 'Delivered',
     items: [
-      { name: 'Atorvastatin 10mg (Strip of 10)', quantity: 2, price: '₹16.00' },
-      { name: 'Aspirin 75mg Gastro-resistant', quantity: 1, price: '₹5.50' },
+      { name: 'Ibuprofen 400mg (Strip of 10)', quantity: 2, price: '₹96.00' },
+      { name: 'Cetirizine 10mg (Strip of 10)', quantity: 1, price: '₹30.00' },
     ],
-    totalAmount: '₹21.50',
+    totalAmount: '₹166.00',
+    subtotal: '₹126.00',
+    deliveryFee: '₹40.00',
     paymentMethod: 'Cash on Delivery (Paid)',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Delivered on 28 Sep, 05:02 PM',
@@ -104,10 +110,12 @@ const DEFAULT_ORDERS: PharmacyOrder[] = [
     status: 'delivered',
     statusLabel: 'Delivered',
     items: [
-      { name: 'Omeprazole 20mg Capsules', quantity: 1, price: '₹8.00' },
-      { name: 'Electrolyte Hydration Powder (Pack of 5)', quantity: 2, price: '₹6.00' },
+      { name: 'Omeprazole 20mg Capsules', quantity: 1, price: '₹75.00' },
+      { name: 'Gelusil Antacid Liquid (200ml)', quantity: 1, price: '₹110.00' },
     ],
-    totalAmount: '₹14.00',
+    totalAmount: '₹225.00',
+    subtotal: '₹185.00',
+    deliveryFee: '₹40.00',
     paymentMethod: 'Visa Card ending in 4242',
     deliveryAddress: '742 Evergreen Terrace, Medical District, Chennai',
     eta: 'Delivered on 18 Sep, 11:22 AM',

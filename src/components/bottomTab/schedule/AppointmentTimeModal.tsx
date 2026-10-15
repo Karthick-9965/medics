@@ -90,9 +90,6 @@ export default function AppointmentTimeModal({
             />
           </ScrollView>
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} activeOpacity={0.8}>
               <Text style={styles.confirmText}>{confirmButtonText}</Text>
             </TouchableOpacity>
@@ -140,7 +137,7 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
   },
   confirmBtn: {
-    flex: 2,
+    flex: 1,
     backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 12,

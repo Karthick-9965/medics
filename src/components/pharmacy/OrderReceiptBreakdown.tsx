@@ -7,6 +7,8 @@ export interface OrderReceiptBreakdownProps {
   items: PharmacyOrderItem[];
   totalAmount: string;
   paymentMethod: string;
+  subtotal?: string;
+  deliveryFee?: string;
 }
 
 /**
@@ -17,22 +19,40 @@ export default function OrderReceiptBreakdown({
   items,
   totalAmount,
   paymentMethod,
+  subtotal,
+  deliveryFee,
 }: OrderReceiptBreakdownProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionHeading}>Items Ordered</Text>
+      <Text style={styles.sectionHeading}>Items Ordered (Tablets & Qty)</Text>
 
       {items.map((it, idx) => (
         <View key={idx} style={styles.row}>
           <Text style={styles.itemName} numberOfLines={1}>
             {it.name}
           </Text>
-          <Text style={styles.itemQty}>x{it.quantity}</Text>
+          <Text style={styles.itemQty}>Count: {it.quantity}</Text>
           <Text style={styles.itemPrice}>{it.price}</Text>
         </View>
       ))}
 
       <View style={styles.divider} />
+
+      {subtotal && (
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Item Subtotal</Text>
+          <Text style={styles.summaryVal}>{subtotal}</Text>
+        </View>
+      )}
+
+      {deliveryFee && (
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Delivery Charge</Text>
+          <Text style={[styles.summaryVal, deliveryFee === 'FREE' && styles.freeText]}>
+            {deliveryFee}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.totalRow}>
         <Text style={styles.totalLabel}>Total Paid</Text>
@@ -84,10 +104,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dividerLine,
     marginVertical: 10,
   },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 3,
+  },
+  summaryLabel: {
+    fontSize: 12.5,
+    color: Colors.secondary,
+  },
+  summaryVal: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textDark,
+  },
+  freeText: {
+    color: Colors.successGreen,
+    fontWeight: '800',
+  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 6,
   },
   totalLabel: {
     fontSize: 14,

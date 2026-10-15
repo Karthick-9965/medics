@@ -112,8 +112,14 @@ export const getLoginSession = async (): Promise<User | null> => {
 
 export const clearLoginSession = async (): Promise<void> => {
   try {
-    await AsyncStorage.removeItem(SESSION_KEY);
-    await AsyncStorage.removeItem('@user_profile_data');
+    await AsyncStorage.multiRemove([
+      SESSION_KEY,
+      '@user_profile_data',
+      '@user_avatar',
+      '@app_active_order_session',
+      '@app_navigation_state_v1',
+      '@active_chat_id',
+    ]);
   } catch (e) {
     console.error('Failed to clear login session', e);
   }

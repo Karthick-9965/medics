@@ -1,9 +1,16 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { PaymentMethodType } from '../../constants/appData';
+import { MedicineItem } from '../../constants/medicinesData';
 import PaymentPicker from '../common/PaymentPicker';
 import PriceSummary from '../common/PriceSummary';
+
+export interface CartEntryItem {
+  medicine: MedicineItem;
+  quantity: number;
+}
 
 export interface PharmacyCheckoutViewProps {
   lastOrderType: 'prescription' | 'catalog';
@@ -18,8 +25,9 @@ export interface PharmacyCheckoutViewProps {
   cartItemsCount: number;
   subtotal: number;
   deliveryFee: number;
-  platformFee: number;
+  platformFee?: number;
   totalAmount: string;
+  cartEntries?: CartEntryItem[];
   isProcessing: boolean;
   onAddressChange: (address: string) => void;
   onPhoneChange: (phone: string) => void;
@@ -30,6 +38,8 @@ export interface PharmacyCheckoutViewProps {
 
 /**
  * Reusable checkout view for pharmacy orders (both prescription and catalog).
+ * Displays ordered tablet names, counts, delivery fee (Free for >500, ₹40 for <500),
+ * and clean bill breakdown without packaging/platform fee.
  */
 export default function PharmacyCheckoutView({
   lastOrderType,
@@ -44,8 +54,8 @@ export default function PharmacyCheckoutView({
   cartItemsCount,
   subtotal,
   deliveryFee,
-  platformFee,
   totalAmount,
+  cartEntries = [],
   isProcessing,
   onAddressChange,
   onPhoneChange,
@@ -53,8 +63,11 @@ export default function PharmacyCheckoutView({
   onUpiIdChange,
   onPlaceOrder,
 }: PharmacyCheckoutViewProps) {
+  const isFreeDelivery = deliveryFee === 0 || subtotal >= 500;
+  const remainingForFreeDelivery = Math.max(0, 500 - subtotal);
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
       {/* Prescription / Order Summary Banner */}
       {lastOrderType === 'prescription' && prescriptionUri ? (
         <View style={styles.checkoutRxSummary}>
@@ -76,8 +89,48 @@ export default function PharmacyCheckoutView({
         </View>
       ) : null}
 
+      {/* Ordered Tablets / Medicines List with Name and Count */}
+      {lastOrderType === 'catalog' && cartEntries.length > 0 && (
+        <View style={styles.orderedItemsCard}>
+          <View style={styles.itemsHeader}>
+            <View style={styles.itemsHeaderLeft}>
+              <Ionicons name="medkit" size={18} color={Colors.primary} />
+              <Text style={styles.itemsHeaderTitle}>Ordered Tablets & Medicines</Text>
+            </View>
+            <View style={styles.itemsCountBadge}>
+              <Text style={styles.itemsCountBadgeText}>{cartItemsCount} {cartItemsCount === 1 ? 'item' : 'items'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.itemsDivider} />
+
+          {cartEntries.map(({ medicine, quantity }) => (
+            <View key={medicine.id} style={styles.itemRow}>
+              <View style={styles.itemBulletDot} />
+              <View style={styles.itemInfoCol}>
+                <Text style={styles.itemMainName} numberOfLines={1}>
+                  {medicine.name}
+                </Text>
+                <Text style={styles.itemDosageText}>{medicine.dosage}</Text>
+              </View>
+
+              <View style={styles.itemCountContainer}>
+                <Text style={styles.itemCountLabel}>Count:</Text>
+                <View style={styles.itemCountPill}>
+                  <Text style={styles.itemCountNumber}>{quantity}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.itemTotalPrice}>
+                ₹{(medicine.price * quantity).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Delivery Details */}
-      <Text style={styles.sectionHeading}>Delivery Details</Text>
+      <Text style={styles.sectionHeading}>Delivery Address & Contact</Text>
       <View style={styles.formGroup}>
         <Text style={styles.label}>Delivery Address</Text>
         <TextInput
@@ -94,7 +147,7 @@ export default function PharmacyCheckoutView({
           value={deliveryPhone}
           onChangeText={onPhoneChange}
           keyboardType="phone-pad"
-          placeholder="e.g. +1 (555) 019-2834"
+          placeholder="e.g. +91 98401 23456"
         />
       </View>
 
@@ -106,18 +159,66 @@ export default function PharmacyCheckoutView({
         onChangeUpiId={onUpiIdChange}
       />
 
-      {/* Price Summary */}
+      {/* Itemized Bill / Price Summary */}
       {lastOrderType === 'catalog' ? (
-        <PriceSummary
-          items={[
-            { label: `Medicines Subtotal (${cartItemsCount} items)`, amount: `₹${subtotal.toFixed(2)}` },
-            { label: 'Express Delivery Fee', amount: deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`, isDiscount: deliveryFee === 0 },
-            { label: 'Packaging & Platform Fee', amount: `₹${platformFee.toFixed(2)}` },
-          ]}
-          totalAmount={`₹${totalAmount}`}
-        />
+        <View style={styles.billCard}>
+          <View style={styles.billHeader}>
+            <Ionicons name="receipt-outline" size={17} color={Colors.primary} />
+            <Text style={styles.billTitle}>Bill Breakdown</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* 1. Item Total */}
+          <View style={styles.billRow}>
+            <Text style={styles.billLabel}>Item Total ({cartItemsCount} medicines)</Text>
+            <Text style={styles.billAmount}>₹{subtotal.toFixed(2)}</Text>
+          </View>
+
+          {/* 2. Delivery Fee */}
+          <View style={styles.billRow}>
+            <View style={styles.deliveryLabelWrap}>
+              <Text style={styles.billLabel}>Delivery Charge</Text>
+              {isFreeDelivery && (
+                <View style={styles.freePillBadge}>
+                  <Text style={styles.freePillBadgeText}>FREE DELIVERY</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.billAmount, isFreeDelivery && styles.freeAmountText]}>
+              {isFreeDelivery ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}
+            </Text>
+          </View>
+
+          {/* Delivery fee status notification box */}
+          {subtotal < 500 ? (
+            <View style={styles.deliveryInfoBoxNotice}>
+              <Ionicons name="bicycle" size={16} color={Colors.warningDark} />
+              <Text style={styles.deliveryInfoTextNotice}>
+                Add <Text style={styles.boldNotice}>₹{remainingForFreeDelivery.toFixed(2)}</Text> more for{' '}
+                <Text style={styles.freeGreenText}>FREE Delivery</Text> (Orders above ₹500 get Free Delivery).
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.deliveryInfoBoxSuccess}>
+              <Ionicons name="checkmark-circle" size={16} color={Colors.successGreen} />
+              <Text style={styles.deliveryInfoTextSuccess}>
+                 Order above ₹500! <Text style={styles.boldNotice}>FREE Delivery applied</Text> (Saved ₹40.00).
+              </Text>
+            </View>
+          )}
+
+          <View style={[styles.divider, { marginVertical: 10 }]} />
+
+          {/* Final Total Amount */}
+          <View style={styles.billTotalRow}>
+            <Text style={styles.totalLabel}>Total Payable</Text>
+            <Text style={styles.totalAmountText}>₹{totalAmount}</Text>
+          </View>
+        </View>
       ) : (
         <PriceSummary
+          title="Prescription Order Bill"
           items={[
             { label: 'Prescription Verification', amount: 'FREE', isDiscount: true },
             { label: 'Doorstep Delivery Fee', amount: 'FREE', isDiscount: true },
@@ -191,11 +292,106 @@ const styles = StyleSheet.create({
     color: Colors.successGreen,
     fontWeight: '600',
   },
+  orderedItemsCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 18,
+  },
+  itemsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  itemsHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  itemsCountBadge: {
+    backgroundColor: Colors.accentLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  itemsCountBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  itemsDivider: {
+    height: 1,
+    backgroundColor: Colors.dividerLine,
+    marginVertical: 10,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  itemBulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
+    marginRight: 8,
+  },
+  itemInfoCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  itemMainName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  itemDosageText: {
+    fontSize: 11,
+    color: Colors.secondary,
+    marginTop: 1,
+  },
+  itemCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  itemCountLabel: {
+    fontSize: 11.5,
+    color: Colors.secondary,
+    marginRight: 4,
+  },
+  itemCountPill: {
+    backgroundColor: Colors.bgLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  itemCountNumber: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  itemTotalPrice: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textDark,
+    minWidth: 54,
+    textAlign: 'right',
+  },
   sectionHeading: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
     color: Colors.black,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   formGroup: {
     marginBottom: 14,
@@ -215,6 +411,122 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 13.5,
     color: Colors.black,
+  },
+  billCard: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: Colors.bgLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginVertical: 10,
+  },
+  billHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  billTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: 8,
+  },
+  billRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  deliveryLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  freePillBadge: {
+    backgroundColor: Colors.successBgTint,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  freePillBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: Colors.successDark,
+    letterSpacing: 0.3,
+  },
+  billLabel: {
+    fontSize: 13,
+    color: Colors.secondary,
+  },
+  billAmount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textDark,
+  },
+  freeAmountText: {
+    color: Colors.successGreen,
+    fontWeight: '800',
+  },
+  deliveryInfoBoxNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.warningBgLight,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  deliveryInfoTextNotice: {
+    fontSize: 11.5,
+    color: Colors.warningDark,
+    flex: 1,
+    lineHeight: 16,
+  },
+  deliveryInfoBoxSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.successBgLight,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  deliveryInfoTextSuccess: {
+    fontSize: 11.5,
+    color: Colors.successDark,
+    flex: 1,
+    lineHeight: 16,
+  },
+  boldNotice: {
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  freeGreenText: {
+    fontWeight: '700',
+    color: Colors.successGreen,
+  },
+  billTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  totalAmountText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   primaryBtn: {
     backgroundColor: Colors.primary,

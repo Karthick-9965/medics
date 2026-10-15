@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
  
 interface OnboardingProps {
   onFinish: () => void;
@@ -47,6 +48,7 @@ export default function Onboarding({ onFinish }: OnboardingProps) {
  
   return (
     <SafeAreaView style={styles.container}>
+      <AppStatusBar style="dark" />
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity

@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import { INITIAL_APPOINTMENTS, getDoctorAvatar } from '../constants/scheduleData';
 import ScheduleStatusTabs, { ScheduleStatus } from '../components/bottomTab/schedule/ScheduleStatusTabs';
 import AppointmentCard, { AppointmentItem } from '../components/bottomTab/schedule/AppointmentCard';
 import ScheduleModalsContainer from '../components/bottomTab/schedule/ScheduleModalsContainer';
 import EmptyState from '../components/common/EmptyState';
+import { useCall } from '../context/CallContext';
 import { useMedicalAlert } from '../hooks/useMedicalAlert';
 import { generateReferenceId } from '../utils/formatters';
 import {
@@ -55,8 +57,7 @@ export default function Schedule({
   const [cancelTarget, setCancelTarget] = useState<AppointmentItem | null>(null);
   const [reviewTarget, setReviewTarget] = useState<AppointmentItem | null>(null);
   const [detailTarget, setDetailTarget] = useState<AppointmentItem | null>(null);
-  const [videoDoctor, setVideoDoctor] = useState<any | null>(null);
-  const [audioDoctor, setAudioDoctor] = useState<any | null>(null);
+  const { startCall } = useCall();
   const [showNotifModal, setShowNotifModal] = useState(false);
 
   const { alertConfig, showAlert, closeAlert } = useMedicalAlert();
@@ -250,6 +251,7 @@ export default function Schedule({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <AppStatusBar style="dark" />
       <View style={styles.container}>
         {/* Header */}
         <View style={[styles.header, fromProfile && styles.headerWithBack]}>
@@ -338,27 +340,19 @@ export default function Schedule({
           onDeleteFromDetail={handleDeleteAppointment}
           onJoinCallFromDetail={(app) => {
             setDetailTarget(null);
-            setVideoDoctor({
+            startCall('video', {
               id: app.id,
               name: app.doctorName,
               specialization: app.specialization,
               avatar: app.avatar,
             });
           }}
-          videoDoctor={videoDoctor}
-          onEndVideoCall={() => setVideoDoctor(null)}
-          onSwitchVideoToAudio={() => {
-            const d = videoDoctor;
-            setVideoDoctor(null);
-            setAudioDoctor(d);
-          }}
-          audioDoctor={audioDoctor}
-          onEndAudioCall={() => setAudioDoctor(null)}
-          onSwitchAudioToVideo={() => {
-            const d = audioDoctor;
-            setAudioDoctor(null);
-            setVideoDoctor(d);
-          }}
+          videoDoctor={null}
+          onEndVideoCall={() => {}}
+          onSwitchVideoToAudio={() => {}}
+          audioDoctor={null}
+          onEndAudioCall={() => {}}
+          onSwitchAudioToVideo={() => {}}
           showNotifModal={showNotifModal}
           onCloseNotifModal={() => setShowNotifModal(false)}
           onNavigateToMessages={onNavigateToMessages}

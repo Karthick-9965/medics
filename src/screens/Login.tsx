@@ -8,6 +8,7 @@ import Button from '../components/ui/Button';
 import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import ScreenHeader from '../components/common/ScreenHeader';
 import SocialLoginButtons from '../components/common/SocialLoginButtons';
+import AppStatusBar from '../components/common/AppStatusBar';
 import { validateEmail, isEmailValidFormat } from '../utils/validation';
 import { getUserByNameOrEmail, saveUser, saveLoginSession } from '../utils/storage';
 
@@ -166,20 +167,21 @@ export default function Login({
     }
   };
 
-  const handleGoBack = () => (onBack ? onBack() : navigation?.goBack());
+  const handleGoBack = () => (onBack ? onBack() : navigation?.navigate('GetStarted'));
   const handleGoSignUp = () => (onSignUpLink ? onSignUpLink() : navigation?.navigate('SignUp'));
   const handleGoForgotPassword = () => (onForgotPassword ? onForgotPassword() : navigation?.navigate('ForgotPassword'));
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppStatusBar style="dark" />
       {/* Header */}
       <ScreenHeader title="Login" onBack={handleGoBack} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Form */}
           <View style={styles.formSection}>
             {/* Email / Username Input */}

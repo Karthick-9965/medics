@@ -11,11 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import MessagesSearchBar, { MessageFilter } from '../components/bottomTab/messages/MessagesSearchBar';
 import ConversationCard, { ConversationItem } from '../components/bottomTab/messages/ConversationCard';
 import ChatDetailModal, { ChatMessage } from '../components/bottomTab/messages/ChatDetailModal';
-import AudioCallModal from '../components/consultation/AudioCallModal';
-import VideoCallModal from '../components/consultation/VideoCallModal';
+import { useCall } from '../context/CallContext';
 import NotificationsModal from '../components/home/NotificationsModal';
 import EmptyState from '../components/common/EmptyState';
 import { CONVERSATIONS, INITIAL_CHAT_MESSAGES } from '../constants/messagesData';
@@ -41,10 +41,14 @@ export default function Messages({
   const [selectedChat, setSelectedChat] = useState<ConversationItem | null>(null);
   const [chatMessages, setChatMessages] = useState<{ [id: string]: ChatMessage[] }>(INITIAL_CHAT_MESSAGES);
   const [typingDoctorId, setTypingDoctorId] = useState<string | null>(null);
-  const [showAudioCall, setShowAudioCall] = useState(false);
-  const [showVideoCall, setShowVideoCall] = useState(false);
+  const { startCall } = useCall();
   const [showNotifModal, setShowNotifModal] = useState(false);
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedChatRef = useRef<ConversationItem | null>(null);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   useEffect(() => {
     return () => {
@@ -122,7 +126,9 @@ export default function Messages({
     );
     setConversations(updated);
     saveConversations(updated);
-    setSelectedChat({ ...item, unread: 0 });
+    const activeItem = { ...item, unread: 0 };
+    setSelectedChat(activeItem);
+    selectedChatRef.current = activeItem;
     try {
       await AsyncStorage.setItem('@active_chat_id', item.id);
     } catch (e) {
@@ -132,6 +138,7 @@ export default function Messages({
 
   const handleCloseChat = async () => {
     setSelectedChat(null);
+    selectedChatRef.current = null;
     try {
       await AsyncStorage.removeItem('@active_chat_id');
     } catch (e) {
@@ -171,11 +178,14 @@ export default function Messages({
       return next;
     });
 
-    // 2. Update conversation: increment unread count by +1 and move to top
+    // Check if user is currently inside this specific chat!
+    const isCurrentlyViewing = selectedChatRef.current?.id === doctorId;
+
+    // 2. Update conversation: If user is actively viewing, keep unread at 0; otherwise increment +1
     setConversations((prev) => {
       const existing = prev.find((c) => c.id === doctorId) || target;
       const currentUnread = existing.unread || 0;
-      const newUnread = currentUnread + 1;
+      const newUnread = isCurrentlyViewing ? 0 : currentUnread + 1;
 
       const updatedItem: ConversationItem = {
         ...existing,
@@ -190,13 +200,15 @@ export default function Messages({
       return reordered;
     });
 
-    // 3. Send Push Notification + In-App Notification Center
-    await sendDoctorMessageNotification({
-      senderName: target.name,
-      specialization: target.specialization,
-      message: replyText,
-      conversationId: doctorId,
-    });
+    // 3. Send Push Notification ONLY if user is NOT currently inside this chat!
+    if (!isCurrentlyViewing) {
+      await sendDoctorMessageNotification({
+        senderName: target.name,
+        specialization: target.specialization,
+        message: replyText,
+        conversationId: doctorId,
+      });
+    }
   };
 
   const handleSendMessage = (
@@ -320,6 +332,7 @@ export default function Messages({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <AppStatusBar style="dark" />
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -372,29 +385,11 @@ export default function Messages({
         isTyping={typingDoctorId === selectedChat?.id}
         onClose={handleCloseChat}
         onSendMessage={handleSendMessage}
-        onDeleteMessage={handleDeleteMessage}
-        onAudioCall={() => setShowAudioCall(true)}
-        onVideoCall={() => setShowVideoCall(true)}
-      />
-
-      {/* Consultations */}
-      <AudioCallModal
-        visible={showAudioCall}
-        doctor={selectedChat}
-        onEndCall={() => setShowAudioCall(false)}
-        onSwitchToVideo={() => {
-          setShowAudioCall(false);
-          setShowVideoCall(true);
+        onAudioCall={() => {
+          if (selectedChat) startCall('audio', selectedChat);
         }}
-      />
-
-      <VideoCallModal
-        visible={showVideoCall}
-        doctor={selectedChat}
-        onEndCall={() => setShowVideoCall(false)}
-        onSwitchToAudio={() => {
-          setShowVideoCall(false);
-          setShowAudioCall(true);
+        onVideoCall={() => {
+          if (selectedChat) startCall('video', selectedChat);
         }}
       />
 

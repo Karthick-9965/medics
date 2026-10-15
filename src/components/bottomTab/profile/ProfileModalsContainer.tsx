@@ -7,6 +7,7 @@ import PharmacyOrdersModal from './PharmacyOrdersModal';
 import LanguageSelectModal, { SupportedLanguage } from './LanguageSelectModal';
 import HelpCenterModal from './HelpCenterModal';
 import PaymentMethodsModal from './PaymentMethodsModal';
+import FamilyMembersModal from './FamilyMembersModal';
 import MedicalAlertModal, { MedicalAlertModalProps } from '../../modals/MedicalAlertModal';
 
 export interface ProfileModalsContainerProps {
@@ -35,6 +36,9 @@ export interface ProfileModalsContainerProps {
   showPaymentMethodsModal: boolean;
   onClosePaymentMethodsModal: () => void;
   onCardUpdated?: (cardText: string) => void;
+
+  showFamilyMembersModal: boolean;
+  onCloseFamilyMembersModal: () => void;
 
   showLanguageModal: boolean;
   currentLanguage: SupportedLanguage;
@@ -78,6 +82,9 @@ export default function ProfileModalsContainer({
   showPaymentMethodsModal,
   onClosePaymentMethodsModal,
   onCardUpdated,
+
+  showFamilyMembersModal,
+  onCloseFamilyMembersModal,
 
   showLanguageModal,
   currentLanguage,
@@ -124,6 +131,15 @@ export default function ProfileModalsContainer({
         initialData={profileData}
         onClose={onClosePersonalInfoModal}
         onSave={onSavePersonalInfo}
+      />
+
+      {/* Family Members & Dependents Modal */}
+      <FamilyMembersModal
+        visible={showFamilyMembersModal}
+        onClose={onCloseFamilyMembersModal}
+        userName={userName}
+        userPhone={profileData?.phone}
+        userGender={profileData?.gender}
       />
 
       {/* Prescriptions Vault Modal */}

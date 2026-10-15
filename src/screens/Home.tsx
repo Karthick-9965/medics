@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import HomeHeader from '../components/home/HomeHeader';
 import HomeSearchBar from '../components/home/HomeSearchBar';
 import QuickServices from '../components/home/QuickServices';
@@ -73,6 +74,20 @@ export default function Home({
       }
       const av = await AsyncStorage.getItem('@user_avatar');
       if (av) setAvatarUri(av);
+
+      // Check if an active order confirmation modal was in progress
+      try {
+        const storedActiveOrder = await AsyncStorage.getItem('@app_active_order_session');
+        if (storedActiveOrder) {
+          const parsed = JSON.parse(storedActiveOrder);
+          if (parsed?.pharmacy) {
+            setOrderingPharmacy(parsed.pharmacy);
+            setPharmacyModalMode(parsed.lastOrderType || 'catalog');
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
     };
     init();
   }, [propName, propEmail]);
@@ -84,6 +99,19 @@ export default function Home({
       });
       getLoginSession().then((session) => {
         if (session?.name) setStoredName(session.name);
+      });
+      AsyncStorage.getItem('@app_active_order_session').then((stored) => {
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed?.pharmacy) {
+              setOrderingPharmacy(parsed.pharmacy);
+              setPharmacyModalMode(parsed.lastOrderType || 'catalog');
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
       });
     }, [])
   );
@@ -106,10 +134,12 @@ export default function Home({
 
   const handleConfirmLogout = async () => {
     setShowLogoutModal(false);
-    if (onLogout) onLogout();
-    else {
+    if (onLogout) {
+      onLogout();
+    } else {
       await clearLoginSession();
-      navigation?.reset({ index: 0, routes: [{ name: 'GetStarted' }] });
+      const rootNav = navigation?.getParent?.() || navigation;
+      rootNav?.reset({ index: 0, routes: [{ name: 'Splash' }] });
     }
   };
 
@@ -172,6 +202,7 @@ export default function Home({
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppStatusBar style="dark" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -339,7 +370,10 @@ export default function Home({
 
         orderingPharmacy={orderingPharmacy}
         pharmacyModalMode={pharmacyModalMode}
-        onCloseOrderingPharmacy={() => setOrderingPharmacy(null)}
+        onCloseOrderingPharmacy={() => {
+          AsyncStorage.removeItem('@app_active_order_session').catch(() => {});
+          setOrderingPharmacy(null);
+        }}
 
         directionsHospital={directionsHospital}
         onCloseDirectionsHospital={() => setDirectionsHospital(null)}

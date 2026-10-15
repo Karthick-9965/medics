@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import {
   AMBULANCE_TYPES,
   NEARBY_AMBULANCES,
@@ -73,6 +74,7 @@ export default function AmbulanceScreen({ onBack, navigation }: AmbulanceScreenP
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppStatusBar style="dark" />
       {/* Top Header */}
       <ScreenHeader
         title={isDispatched ? 'Live Dispatch' : 'Emergency Ambulance'}

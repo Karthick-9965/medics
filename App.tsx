@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import React, { useRef, useState, useEffect } from 'react';
+import AppStatusBar from './src/components/common/AppStatusBar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef, useFocusEffect } from '@react-navigation/native';
+import { BackHandler } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
@@ -23,6 +25,7 @@ import BottomTabBar from './src/components/bottomTab/BottomTabBar';
 import { Colors } from './src/constants/Colors';
 import { getLoginSession, clearLoginSession } from './src/utils/storage';
 import { useAppNotification } from './src/hooks/useAppNotification';
+import { CallProvider } from './src/context/CallContext';
 import {
   RootStackParamList,
   MainTabParamList,
@@ -60,9 +63,10 @@ function HomeScreenWrapper({ navigation, route }: any) {
 
   const handleLogout = async () => {
     await clearLoginSession();
-    navigation.reset({
+    const rootNav = navigation.getParent() || navigation;
+    rootNav.reset({
       index: 0,
-      routes: [{ name: 'GetStarted' }],
+      routes: [{ name: 'Splash' }],
     });
   };
 
@@ -117,9 +121,10 @@ function ProfileScreenWrapper({ navigation, route }: any) {
 
   const handleLogout = async () => {
     await clearLoginSession();
-    navigation.reset({
+    const rootNav = navigation.getParent() || navigation;
+    rootNav.reset({
       index: 0,
-      routes: [{ name: 'GetStarted' }],
+      routes: [{ name: 'Splash' }],
     });
   };
 
@@ -184,13 +189,42 @@ function MainTabNavigator() {
 }
 
 function SplashScreen({ navigation }: SplashScreenProps) {
-  return (
-    <Splash
-      onFinish={() => {
-        navigation.replace('Onboarding');
-      }}
-    />
-  );
+  const isNavigatingRef = useRef(false);
+
+  const handleFinish = React.useCallback(async () => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+
+    try {
+      const session = await getLoginSession();
+      if (session && session.name) {
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              params: {
+                screen: 'HomeTab',
+                params: { userName: session.name, userEmail: session.email },
+              },
+            },
+          ],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Onboarding' }],
+        });
+      }
+    } catch (e) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Onboarding' }],
+      });
+    }
+  }, [navigation]);
+
+  return <Splash onFinish={handleFinish} />;
 }
 
 function OnboardingScreen({ navigation }: OnboardingScreenProps) {
@@ -207,32 +241,82 @@ function GetStartedScreen({ navigation }: GetStartedScreenProps) {
 }
 
 function LoginScreen({ navigation, route }: LoginScreenProps) {
+  const handleBackToGetStarted = React.useCallback(() => {
+    const state = navigation.getState();
+    const hasGetStarted = state?.routes?.some((r: any) => r.name === 'GetStarted');
+    if (hasGetStarted) {
+      navigation.navigate('GetStarted');
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'GetStarted' }],
+      });
+    }
+  }, [navigation]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        handleBackToGetStarted();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [handleBackToGetStarted])
+  );
+
   return (
     <Login
       initialEmail={route.params?.email || ''}
       initialPassword={route.params?.password || ''}
       initialName={route.params?.name || ''}
-      onBack={() => navigation.goBack()}
+      onBack={handleBackToGetStarted}
       onLoginSuccess={(name, email) => {
         navigation.reset({
           index: 0,
           routes: [{ name: 'Main', params: { screen: 'HomeTab', params: { userName: name, userEmail: email } } }],
         });
       }}
-      onSignUpLink={() => navigation.navigate('SignUp')}
+      onSignUpLink={() => navigation.replace('SignUp')}
       onForgotPassword={() => navigation.navigate('ForgotPassword')}
     />
   );
 }
 
 function SignUpScreen({ navigation }: SignUpScreenProps) {
+  const handleBackToGetStarted = React.useCallback(() => {
+    const state = navigation.getState();
+    const hasGetStarted = state?.routes?.some((r: any) => r.name === 'GetStarted');
+    if (hasGetStarted) {
+      navigation.navigate('GetStarted');
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'GetStarted' }],
+      });
+    }
+  }, [navigation]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        handleBackToGetStarted();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [handleBackToGetStarted])
+  );
+
   return (
     <SignUp
-      onBack={() => navigation.goBack()}
+      onBack={handleBackToGetStarted}
       onSignUpSuccess={(name, email) => {
-        navigation.navigate('Login', { email, name });
+        navigation.replace('Login', { email, name });
       }}
-      onLoginLink={() => navigation.navigate('Login')}
+      onLoginLink={() => navigation.replace('Login')}
     />
   );
 }
@@ -278,28 +362,30 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator
-          initialRouteName="Splash"
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: Colors.white },
-          }}
-        >
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="GetStarted" component={GetStartedScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="Main" component={MainTabNavigator} />
-          <Stack.Screen name="Home" component={MainTabNavigator} />
-          <Stack.Screen name="SeeAll" component={SeeAllScreenWrapper} />
-          <Stack.Screen name="Ambulance" component={AmbulanceScreenWrapper} />
-        </Stack.Navigator>
-        <StatusBar style="auto" />
-      </NavigationContainer>
+      <CallProvider>
+        <NavigationContainer ref={navigationRef}>
+          <Stack.Navigator
+            initialRouteName="Splash"
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+              contentStyle: { backgroundColor: Colors.white },
+            }}
+          >
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="GetStarted" component={GetStartedScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen name="Home" component={MainTabNavigator} />
+            <Stack.Screen name="SeeAll" component={SeeAllScreenWrapper} />
+            <Stack.Screen name="Ambulance" component={AmbulanceScreenWrapper} />
+          </Stack.Navigator>
+          <AppStatusBar style="dark" />
+        </NavigationContainer>
+      </CallProvider>
     </SafeAreaProvider>
   );
 }

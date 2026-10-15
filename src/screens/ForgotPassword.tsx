@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { ErrorMessages } from '../constants/ErrorMessages';
 import MedicalAlertModal from '../components/modals/MedicalAlertModal';
+import AppStatusBar from '../components/common/AppStatusBar';
 import { ForgotEmailStep, ForgotOtpStep, ForgotNewPasswordStep } from '../components/auth/ForgotPasswordComponents';
 import { validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
 import { getUserByEmail, updateUserPassword } from '../utils/storage';
@@ -178,6 +179,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess, navigati
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppStatusBar style="dark" />
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.iconBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.textDark} />
@@ -185,7 +187,7 @@ export default function ForgotPassword({ onBackToLogin, onResetSuccess, navigati
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {currentStep === 1 && (
             <ForgotEmailStep
               email={email}

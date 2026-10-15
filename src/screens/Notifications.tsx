@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
+import AppStatusBar from '../components/common/AppStatusBar';
 import EmptyState from '../components/common/EmptyState';
 import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import SwipeableNotificationCard from '../components/notifications/SwipeableNotificationCard';
@@ -130,6 +131,7 @@ export default function Notifications({
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <AppStatusBar style="dark" />
       {/* Screen Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

@@ -8,6 +8,7 @@ import InputField from '../components/ui/InputField';
 import Button from '../components/ui/Button';
 import MedicalAlertModal from '../components/modals/MedicalAlertModal';
 import ScreenHeader from '../components/common/ScreenHeader';
+import AppStatusBar from '../components/common/AppStatusBar';
 import { validateName, validateEmail, validatePassword, isEmailValidFormat } from '../utils/validation';
 import { saveUser } from '../utils/storage';
 
@@ -104,19 +105,20 @@ export default function SignUp({ onBack, onSignUpSuccess, onLoginLink, navigatio
     else navigation?.navigate('Login');
   };
 
-  const handleGoBack = () => (onBack ? onBack() : navigation?.goBack());
+  const handleGoBack = () => (onBack ? onBack() : navigation?.navigate('GetStarted'));
   const handleGoLogin = () => (onLoginLink ? onLoginLink() : navigation?.navigate('Login'));
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppStatusBar style="dark" />
       {/* Header */}
       <ScreenHeader title="Sign Up" onBack={handleGoBack} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Form */}
           <View style={styles.formSection}>
             {/* Name Input */}

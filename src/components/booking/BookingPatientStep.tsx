@@ -1,5 +1,6 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { CONSULTATION_OPTIONS, ConsultationType } from '../../constants/appData';
@@ -32,6 +33,29 @@ export default function BookingPatientStep({
   problemDescription,
   onChangeProblemDescription,
 }: BookingPatientStepProps) {
+  const [savedMembers, setSavedMembers] = useState<any[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@app_family_members').then((val) => {
+      if (val) {
+        try {
+          const list = JSON.parse(val);
+          if (Array.isArray(list) && list.length > 0) {
+            setSavedMembers(list);
+          }
+        } catch (e) {}
+      }
+    });
+  }, []);
+
+  const handleSelectSavedMember = (member: any) => {
+    onChangePatientName(member.name || '');
+    if (member.age) onChangePatientAge(String(member.age));
+    if (member.gender && ['Male', 'Female', 'Other'].includes(member.gender)) {
+      onSelectPatientGender(member.gender);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionHeading}>Choose Consultation Mode</Text>
@@ -65,6 +89,36 @@ export default function BookingPatientStep({
       })}
 
       <Text style={[styles.sectionHeading, { marginTop: 18 }]}>Patient Information</Text>
+
+      {/* Quick Select from Saved Family Members */}
+      {savedMembers.length > 0 && (
+        <View style={styles.quickSelectWrapper}>
+          <Text style={styles.quickSelectLabel}>Select Patient Profile:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickChipsScroll}>
+            {savedMembers.map((m) => {
+              const isSelected = patientName.trim().toLowerCase() === (m.name || '').trim().toLowerCase();
+              return (
+                <TouchableOpacity
+                  key={m.id}
+                  style={[styles.patientChip, isSelected && styles.patientChipActive]}
+                  onPress={() => handleSelectSavedMember(m)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={m.relationship === 'Self' ? 'person-circle-outline' : 'person-outline'}
+                    size={15}
+                    color={isSelected ? Colors.white : Colors.primary}
+                  />
+                  <Text style={[styles.patientChipText, isSelected && styles.patientChipTextActive]}>
+                    {m.name} {m.relationship && m.relationship !== 'Other' ? `(${m.relationship})` : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
       <View style={styles.formGroup}>
         <Text style={styles.label}>Patient Full Name</Text>
         <TextInput
@@ -241,6 +295,44 @@ const styles = StyleSheet.create({
   },
   genderTextSelected: {
     color: Colors.primary,
+    fontWeight: '700',
+  },
+  quickSelectWrapper: {
+    marginBottom: 12,
+  },
+  quickSelectLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    marginBottom: 6,
+  },
+  quickChipsScroll: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  patientChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  patientChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  patientChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textDark,
+  },
+  patientChipTextActive: {
+    color: Colors.white,
     fontWeight: '700',
   },
 });
